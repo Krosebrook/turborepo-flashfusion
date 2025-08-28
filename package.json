@@ -11,7 +11,11 @@
     "clean": "turbo clean",
     "restore-state": "node restore-session.js",
     "next-steps": "node restore-session.js",
-    "deploy": "vercel --prod"
+    "deploy": "vercel --prod",
+    "repo:list": "node tools/cli/repo-manager.js list",
+    "repo:status": "node tools/cli/repo-manager.js status",
+    "repo:plan": "node tools/cli/repo-manager.js plan",
+    "repo:add": "node tools/cli/repo-manager.js add"
   },
   "devDependencies": {
     "turbo": "^2.3.0",
