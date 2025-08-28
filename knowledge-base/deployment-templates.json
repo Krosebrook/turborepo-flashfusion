@@ -1,0 +1,23 @@
+{
+  "vercel": {
+    "vercel.json": {
+      "framework": "nextjs",
+      "buildCommand": "turbo build",
+      "devCommand": "turbo dev",
+      "installCommand": "npm ci",
+      "outputDirectory": "apps/web/.next",
+      "env": {
+        "ANTHROPIC_API_KEY": "@anthropic-key",
+        "SUPABASE_URL": "@supabase-url", 
+        "SUPABASE_ANON_KEY": "@supabase-key",
+        "DATABASE_URL": "@database-url"
+      }
+    }
+  },
+  "github_actions": {
+    "ci.yml": "name: CI/CD\non: [push, pull_request]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: '18' }\n      - run: npm ci\n      - run: npx turbo build\n      - run: npx turbo test\n      - run: npx turbo lint"
+  },
+  "docker": {
+    "Dockerfile": "FROM node:18-alpine\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci --only=production\nCOPY . .\nRUN npx turbo build\nEXPOSE 3000\nCMD [\"npm\", \"start\"]"
+  }
+}
