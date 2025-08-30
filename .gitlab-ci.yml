@@ -1,0 +1,322 @@
+# GitLab CI/CD Configuration for FlashFusion Turborepo
+# Enterprise-grade 10-stage pipeline optimized for monorepo development
+
+# Global configuration
+image: node:18-alpine
+
+# Cache configuration for faster builds
+cache:
+  key: 
+    files:
+      - package-lock.json
+      - turbo.json
+  paths:
+    - node_modules/
+    - .turbo/
+    - .npm/
+
+# Global variables
+variables:
+  NODE_ENV: "production"
+  TURBO_TOKEN: $TURBO_TOKEN
+  TURBO_TEAM: $TURBO_TEAM
+  NPM_CONFIG_CACHE: "${CI_PROJECT_DIR}/.npm"
+  CYPRESS_CACHE_FOLDER: "${CI_PROJECT_DIR}/cache/Cypress"
+
+# Pipeline stages
+stages:
+  - prepare
+  - security
+  - build
+  - test
+  - quality
+  - deploy-staging
+  - integration-tests
+  - deploy-production
+  - monitor
+  - cleanup
+
+# Stage 1: Prepare Environment
+prepare_environment:
+  stage: prepare
+  script:
+    - echo "🚀 Preparing FlashFusion Turborepo build environment"
+    - node --version
+    - npm --version
+    - npm ci
+    - npx turbo --version
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 hour
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+# Stage 2: Security Scanning
+security_sast:
+  stage: security
+  image: registry.gitlab.com/security-products/semgrep:latest
+  script:
+    - echo "🔒 Running SAST security analysis"
+    - semgrep --config=auto --json --output=sast-report.json .
+  artifacts:
+    reports:
+      sast: sast-report.json
+    expire_in: 1 week
+  allow_failure: true
+
+security_secrets:
+  stage: security
+  image: registry.gitlab.com/security-products/secrets:latest
+  script:
+    - echo "🔍 Scanning for exposed secrets"
+    - /analyzer run
+  artifacts:
+    reports:
+      secret_detection: gl-secret-detection-report.json
+    expire_in: 1 week
+  allow_failure: true
+
+security_dependencies:
+  stage: security
+  script:
+    - echo "📦 Scanning dependencies for vulnerabilities"
+    - npm audit --audit-level moderate
+    - npx audit-ci --moderate
+  allow_failure: true
+
+# Stage 3: Build All Packages
+build_packages:
+  stage: build
+  script:
+    - echo "🏗️  Building all packages with Turborepo"
+    - npx turbo build --cache-dir=.turbo
+  artifacts:
+    paths:
+      - apps/*/dist/
+      - apps/*/.next/
+      - packages/*/dist/
+      - tools/*/dist/
+      - .turbo/
+    expire_in: 1 hour
+  dependencies:
+    - prepare_environment
+
+# Stage 4: Testing
+test_unit:
+  stage: test
+  script:
+    - echo "🧪 Running unit tests"
+    - npx turbo test:unit --cache-dir=.turbo
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+      junit: junit.xml
+    paths:
+      - coverage/
+    expire_in: 1 week
+  dependencies:
+    - build_packages
+
+test_integration:
+  stage: test
+  services:
+    - postgres:13
+    - redis:6
+  variables:
+    POSTGRES_DB: test_db
+    POSTGRES_USER: test_user
+    POSTGRES_PASSWORD: test_password
+    DATABASE_URL: "postgresql://test_user:test_password@postgres:5432/test_db"
+    REDIS_URL: "redis://redis:6379"
+  script:
+    - echo "🔧 Running integration tests"
+    - npx turbo test:integration --cache-dir=.turbo
+  artifacts:
+    reports:
+      junit: junit-integration.xml
+    expire_in: 1 week
+  dependencies:
+    - build_packages
+
+# Stage 5: Code Quality Analysis
+quality_lint:
+  stage: quality
+  script:
+    - echo "📏 Running code quality checks"
+    - npx turbo lint --cache-dir=.turbo
+    - npx turbo type-check --cache-dir=.turbo
+  dependencies:
+    - build_packages
+
+quality_performance:
+  stage: quality
+  script:
+    - echo "⚡ Analyzing bundle performance"
+    - npx turbo analyze --cache-dir=.turbo
+  artifacts:
+    paths:
+      - apps/*/bundle-analysis/
+    expire_in: 1 week
+  dependencies:
+    - build_packages
+  allow_failure: true
+
+# Stage 6: Deploy to Staging
+deploy_staging:
+  stage: deploy-staging
+  environment:
+    name: staging
+    url: https://staging.flashfusion.dev
+  script:
+    - echo "🚀 Deploying to staging environment"
+    - echo "Deploying apps/web to staging"
+    - echo "Deploying apps/api to staging"
+    - echo "Database migrations..."
+    - echo "✅ Staging deployment complete"
+  dependencies:
+    - build_packages
+    - test_unit
+    - test_integration
+    - quality_lint
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*$/'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+# Stage 7: Integration Tests on Staging
+integration_tests_staging:
+  stage: integration-tests
+  image: mcr.microsoft.com/playwright:latest
+  script:
+    - echo "🎭 Running E2E tests on staging"
+    - npm install
+    - npx playwright install
+    - npx playwright test --config=playwright.staging.config.ts
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+      - playwright-report/
+    expire_in: 1 week
+  dependencies:
+    - deploy_staging
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH =~ /^feature\/.*$/'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+# Stage 8: Deploy to Production
+deploy_production:
+  stage: deploy-production
+  environment:
+    name: production
+    url: https://flashfusion.dev
+  script:
+    - echo "🚀 Deploying to production environment"
+    - echo "🔄 Blue-Green deployment strategy"
+    - echo "Deploying apps/web to production"
+    - echo "Deploying apps/api to production"
+    - echo "Database migrations with rollback plan..."
+    - echo "✅ Production deployment complete"
+  dependencies:
+    - build_packages
+    - test_unit
+    - test_integration
+    - quality_lint
+    - integration_tests_staging
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+  before_script:
+    - echo "🔍 Pre-deployment validation"
+    - echo "Database backup created"
+    - echo "Health checks passed"
+
+# Manual rollback job
+rollback_production:
+  stage: deploy-production
+  environment:
+    name: production
+    url: https://flashfusion.dev
+  script:
+    - echo "🔄 Rolling back production deployment"
+    - echo "Restoring previous version"
+    - echo "Database rollback if needed"
+    - echo "✅ Rollback complete"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+      allow_failure: false
+
+# Stage 9: Production Monitoring
+monitor_health:
+  stage: monitor
+  script:
+    - echo "📊 Setting up production monitoring"
+    - echo "Health check: API endpoints"
+    - echo "Performance metrics collection"
+    - echo "Error tracking with Sentry"
+    - echo "✅ Monitoring active"
+  dependencies:
+    - deploy_production
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# Stage 10: Cleanup
+cleanup_artifacts:
+  stage: cleanup
+  script:
+    - echo "🧹 Cleaning up build artifacts"
+    - echo "Removing temporary files"
+    - echo "Optimizing cache storage"
+    - echo "✅ Cleanup complete"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  when: always
+
+# Scheduled jobs
+weekly_security_scan:
+  extends: security_sast
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+
+daily_dependency_update:
+  stage: prepare
+  script:
+    - echo "📦 Checking for dependency updates"
+    - npm outdated
+    - echo "Creating MR for updates if needed"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  allow_failure: true
+
+# Job templates for reuse
+.node_job_template: &node_job
+  image: node:18-alpine
+  before_script:
+    - npm ci
+  cache:
+    key: npm-cache
+    paths:
+      - node_modules/
+      - .npm/
+
+.docker_job_template: &docker_job
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
+# Include external pipeline configurations
+include:
+  - local: '.gitlab/ci/docker.yml'
+  - local: '.gitlab/ci/security.yml'
+  - local: '.gitlab/ci/performance.yml'

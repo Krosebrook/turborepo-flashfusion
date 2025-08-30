@@ -14,17 +14,21 @@
     "deploy": "vercel --prod"
   },
   "devDependencies": {
-    "turbo": "^2.3.0",
     "@turbo/gen": "^2.3.0",
-    "typescript": "^5.0.0",
     "@types/node": "^20.0.0",
     "eslint": "^8.0.0",
-    "prettier": "^3.0.0"
+    "prettier": "^3.0.0",
+    "turbo": "^2.3.0",
+    "typescript": "^5.0.0"
   },
   "packageManager": "npm@10.0.0",
   "workspaces": [
     "apps/*",
     "packages/*",
     "tools/*"
-  ]
+  ],
+  "dependencies": {
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9"
+  }
 }
