@@ -1,0 +1,20 @@
+{
+  "projectId": "ff-1753359432498",
+  "createdAt": 1753359432713,
+  "updatedAt": 1753359432713,
+  "project": {
+    "phase": "discovery",
+    "status": "active",
+    "platform": "web",
+    "target_audience": "general",
+    "budget": "medium",
+    "timeline": "standard",
+    "createdBy": "FlashFusion-Orchestrator"
+  },
+  "agents": {},
+  "history": [],
+  "metadata": {
+    "version": "1.0",
+    "source": "FlashFusion-Orchestrator"
+  }
+}
