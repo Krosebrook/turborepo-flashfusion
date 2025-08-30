@@ -1,0 +1,25 @@
+{
+  "name": "@flashfusion/cli",
+  "version": "0.0.1",
+  "private": true,
+  "bin": {
+    "flashfusion": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod +x dist/index.js",
+    "dev": "tsc --watch",
+    "lint": "eslint src/",
+    "format": "prettier --write src/",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "commander": "^11.0.0",
+    "chalk": "^4.1.2",
+    "inquirer": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/inquirer": "^9.0.0",
+    "typescript": "^5.0.0"
+  }
+}

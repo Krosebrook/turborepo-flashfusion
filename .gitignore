@@ -10,6 +10,7 @@ yarn-error.log*
 dist/
 build/
 out/
+coverage/
 
 # Environment files
 .env
@@ -36,3 +37,15 @@ logs
 # Cache
 .cache/
 .parcel-cache/
+
+# TypeScript
+*.tsbuildinfo
+
+# ESLint
+.eslintcache
+
+# Turbo
+.turbo
+
+# Local state (keep for session management)
+# .turborepo-state.json
