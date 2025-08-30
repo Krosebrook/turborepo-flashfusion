@@ -1,0 +1,20 @@
+{
+  "name": "@flashfusion/ai-agents",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'No build needed for AI agents'",
+    "dev": "echo 'AI agents ready for development'",
+    "lint": "echo 'Linting AI agents'",
+    "type-check": "echo 'Type checking AI agents'"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.57.0",
+    "@supabase/supabase-js": "^2.0.0",
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
