@@ -1,0 +1,22 @@
+{
+  "projectId": "proj_1753314395611_oegu8le8u",
+  "createdAt": 1753314395611,
+  "updatedAt": 1753314395611,
+  "project": {
+    "phase": "discovery",
+    "status": "active",
+    "name": "Test Project Enhanced",
+    "description": "Testing the enhanced API v1 capabilities",
+    "type": "web",
+    "priority": 7,
+    "budget": "medium",
+    "timeline": "standard",
+    "id": "proj_1753314395611_oegu8le8u"
+  },
+  "agents": {},
+  "history": [],
+  "metadata": {
+    "version": "1.0",
+    "source": "FlashFusion-Orchestrator"
+  }
+}

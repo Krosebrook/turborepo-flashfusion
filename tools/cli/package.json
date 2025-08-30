@@ -1,0 +1,19 @@
+{
+  "name": "@flashfusion/cli",
+  "version": "1.0.0",
+  "private": true,
+  "main": "ff-cli.js",
+  "bin": {
+    "ff": "./ff-cli.js"
+  },
+  "scripts": {
+    "build": "echo 'No build needed for CLI'",
+    "dev": "echo 'CLI tools ready for development'",
+    "lint": "echo 'Linting CLI tools'",
+    "type-check": "echo 'No TypeScript in CLI'"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "dotenv": "^16.0.0"
+  }
+}

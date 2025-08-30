@@ -1,0 +1,64 @@
+{
+  "projectId": "ff-1753360394773",
+  "createdAt": 1753360394957,
+  "updatedAt": 1753360394957,
+  "currentPhase": "discovery",
+  "phases": {
+    "discovery": {
+      "market_research": "pending",
+      "strategy": "pending",
+      "vision": "pending",
+      "requirements": "pending"
+    },
+    "design": {
+      "user_research": "pending",
+      "wireframes": "pending",
+      "visual_design": "pending",
+      "design_system": "pending"
+    },
+    "development": {
+      "api_dev": "pending",
+      "mobile_dev": "pending",
+      "database": "pending",
+      "security": "pending"
+    },
+    "testing": {
+      "testing": "pending",
+      "automation": "pending",
+      "quality": "pending",
+      "performance_testing": "pending"
+    },
+    "deployment": {
+      "deployment": "pending",
+      "infrastructure": "pending",
+      "monitoring": "pending",
+      "cicd": "pending"
+    },
+    "launch": {
+      "campaigns": "pending",
+      "growth": "pending",
+      "user_acquisition": "pending",
+      "content": "pending"
+    }
+  },
+  "progress": {
+    "overall": 0,
+    "byPhase": {
+      "discovery": 0,
+      "design": 0,
+      "development": 0,
+      "testing": 0,
+      "deployment": 0,
+      "launch": 0
+    }
+  },
+  "timeline": {
+    "started": 1753360394957,
+    "estimated": null,
+    "milestones": []
+  },
+  "metadata": {
+    "version": "1.0",
+    "source": "FlashFusion-Orchestrator"
+  }
+}

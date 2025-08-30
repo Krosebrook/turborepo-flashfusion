@@ -1,0 +1,16 @@
+{
+  "name": "@flashfusion/shared",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'No build needed for shared utilities'",
+    "dev": "echo 'Shared utilities ready for development'",
+    "lint": "echo 'Linting shared utilities'",
+    "type-check": "echo 'Type checking shared utilities'"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
