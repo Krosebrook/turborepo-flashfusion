@@ -1,4 +1,4 @@
-import { Agent, AgentType, Task, Context, AgentResult, ValidationResult } from '../types';
+import { Agent, AgentType, Task, Context, AgentResult, ValidationResult, ValidationError, ValidationWarning } from '../types';
 
 /**
  * Base agent implementation providing common functionality
@@ -47,8 +47,8 @@ export abstract class BaseAgent implements Agent {
    * Validate task input before execution
    */
   validate(task: Task): ValidationResult {
-    const errors = [];
-    const warnings = [];
+    const errors: ValidationError[] = [];
+    const warnings: ValidationWarning[] = [];
     
     // Basic validation
     if (!task.id) {

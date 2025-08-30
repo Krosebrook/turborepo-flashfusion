@@ -22,7 +22,7 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['system-ui', 'sans-serif'],
       },
     },
   },
