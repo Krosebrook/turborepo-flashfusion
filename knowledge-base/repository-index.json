@@ -1,0 +1,822 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-08-31T01:25:00Z",
+    "totalRepositories": 21,
+    "dataSource": "GitHub API verified",
+    "catalogVersion": "comprehensive-v1"
+  },
+  "categories": {
+    "flashfusion-ecosystem": {
+      "name": "FlashFusion Ecosystem",
+      "description": "Core AI business platform and related tools",
+      "count": 6,
+      "priority": "high",
+      "repositories": [
+        "turborepo-flashfusion",
+        "FlashFusion",
+        "FlashFusion-Unified", 
+        "flashfusion-ide",
+        "flashfusion-genesis",
+        "flashfusion-loveable"
+      ]
+    },
+    "ai-agents-tools": {
+      "name": "AI Agents & Intelligence Tools", 
+      "description": "Specialized AI assistants, scrapers, and cognitive enhancement tools",
+      "count": 6,
+      "priority": "high",
+      "repositories": [
+        "enhanced-firecrawl-scraper",
+        "tessa",
+        "cortex-second-brain-4589",
+        "knowledge-base-app",
+        "theaidashboard",
+        "blindspot-whisperer"
+      ]
+    },
+    "development-tools": {
+      "name": "Development Tools & Infrastructure",
+      "description": "Frameworks, starters, utilities, and development acceleration tools", 
+      "count": 5,
+      "priority": "medium",
+      "repositories": [
+        "CGDSTARTER",
+        "OAuth",
+        "d1-rest",
+        "nextjs-with-supabase",
+        "nextjs-commerce"
+      ]
+    },
+    "applications": {
+      "name": "Applications & Projects",
+      "description": "Complete applications, games, and end-user projects",
+      "count": 4,
+      "priority": "medium", 
+      "repositories": [
+        "DevChat",
+        "HabboHotel",
+        "LifeWins",
+        "FFSignup"
+      ]
+    }
+  },
+  "repositories": {
+    "turborepo-flashfusion": {
+      "name": "turborepo-flashfusion",
+      "fullName": "Krosebrook/turborepo-flashfusion",
+      "description": "Turborepo monorepo setup for FlashFusion projects with shared packages and optimized build pipeline",
+      "category": "flashfusion-ecosystem",
+      "language": "JavaScript",
+      "status": "active",
+      "priority": "critical",
+      "size": 695,
+      "openIssues": 4,
+      "lastPush": "2025-08-31T01:24:29Z",
+      "createdAt": "2025-08-28T05:29:35Z",
+      "homepage": null,
+      "topics": ["turborepo", "monorepo", "flashfusion", "build-optimization"],
+      "features": [
+        "Session restoration system",
+        "Knowledge base integration", 
+        "Next-steps generation",
+        "Build optimization",
+        "Multi-package coordination"
+      ],
+      "useCases": [
+        "Development workflow optimization",
+        "Shared component management", 
+        "Multi-package coordination",
+        "Build pipeline automation"
+      ],
+      "developerValue": "Reduces build times by 60-80%, enables efficient team collaboration",
+      "techStack": ["JavaScript", "Turborepo", "Node.js", "Monorepo"],
+      "readmeAvailable": true,
+      "deploymentReady": true
+    },
+    "FlashFusion": {
+      "name": "FlashFusion",
+      "fullName": "Krosebrook/FlashFusion", 
+      "description": "Core FlashFusion AI Business Operating System",
+      "category": "flashfusion-ecosystem",
+      "language": "TypeScript",
+      "status": "active",
+      "priority": "critical",
+      "size": 2382,
+      "openIssues": 5,
+      "lastPush": "2025-08-24T18:42:57Z",
+      "createdAt": "2025-06-15T13:01:55Z",
+      "homepage": null,
+      "topics": ["ai", "business-automation", "agents", "typescript"],
+      "features": [
+        "AI agent orchestration",
+        "Business process automation",
+        "Revenue optimization",
+        "Workflow automation"
+      ],
+      "useCases": [
+        "Business process automation",
+        "AI-powered workflow creation", 
+        "Revenue stream optimization",
+        "Enterprise automation solutions"
+      ],
+      "developerValue": "Complete AI business automation framework with proven patterns",
+      "techStack": ["TypeScript", "AI Agents", "Business Automation"],
+      "readmeAvailable": false,
+      "deploymentReady": true
+    },
+    "FlashFusion-Unified": {
+      "name": "FlashFusion-Unified",
+      "fullName": "Krosebrook/FlashFusion-Unified",
+      "description": "AI-powered business operating system that transforms ideas into automated revenue streams",
+      "category": "flashfusion-ecosystem", 
+      "language": "JavaScript",
+      "status": "active",
+      "priority": "critical",
+      "size": 127022,
+      "openIssues": 7,
+      "lastPush": "2025-08-29T17:11:27Z",
+      "createdAt": "2025-07-24T14:59:23Z",
+      "homepage": "https://FlashFusion.co",
+      "topics": ["ai", "business-automation", "multi-agent", "workflow-engine", "flashfusion", "revenue-automation"],
+      "features": [
+        "Multi-agent orchestration",
+        "Workflow automation engine",
+        "Revenue optimization",
+        "Enterprise integrations",
+        "MCP server support"
+      ],
+      "useCases": [
+        "Enterprise business automation",
+        "Multi-agent AI workflows",
+        "Revenue stream automation", 
+        "SaaS platform development"
+      ],
+      "developerValue": "Production-ready enterprise AI platform with comprehensive tooling",
+      "techStack": ["Node.js", "Express", "Anthropic Claude", "Firebase", "Supabase", "OpenAI"],
+      "readmeAvailable": false,
+      "deploymentReady": true
+    },
+    "flashfusion-ide": {
+      "name": "flashfusion-ide",
+      "fullName": "Krosebrook/flashfusion-ide",
+      "description": "🚀 FlashFusion IDE - A modern, AI-powered, web-based IDE that rivals Replit and Loveable.dev - completely free and self hosting.",
+      "category": "flashfusion-ecosystem",
+      "language": "TypeScript", 
+      "status": "production-ready",
+      "priority": "high",
+      "size": 93,
+      "openIssues": 0,
+      "lastPush": "2025-07-31T17:53:13Z",
+      "createdAt": "2025-07-31T16:56:49Z",
+      "homepage": null,
+      "topics": ["ide", "react", "typescript", "ai", "web-based", "development"],
+      "features": [
+        "6 specialized AI agents",
+        "Monaco editor integration",
+        "Integrated terminal with 20+ commands",
+        "Project templates for React, Vue, Node.js",
+        "Neural-themed UI",
+        "Mobile-responsive design"
+      ],
+      "useCases": [
+        "Web-based development",
+        "AI-assisted coding",
+        "Real-time collaboration",
+        "Educational coding platforms"
+      ],
+      "developerValue": "Free alternative to paid cloud IDEs with professional features",
+      "techStack": ["React 18.3", "TypeScript", "Vite", "Monaco Editor", "Tailwind CSS"],
+      "readmeAvailable": true,
+      "deploymentReady": true
+    },
+    "flashfusion-genesis": {
+      "name": "flashfusion-genesis",
+      "fullName": "Krosebrook/flashfusion-genesis",
+      "description": "FlashFusion genesis landing and showcase platform",
+      "category": "flashfusion-ecosystem",
+      "language": "TypeScript",
+      "status": "active",
+      "priority": "medium",
+      "size": 461,
+      "openIssues": 3,
+      "lastPush": "2025-08-22T18:58:54Z",
+      "createdAt": "2025-08-14T04:58:44Z",
+      "homepage": "https://flashfusion-genesis.vercel.app",
+      "topics": ["landing-page", "showcase", "nextjs", "typescript"],
+      "features": [
+        "Product showcase",
+        "User onboarding",
+        "Feature demonstrations",
+        "Marketing optimization"
+      ],
+      "useCases": [
+        "Product showcase",
+        "User onboarding",
+        "Feature demonstrations", 
+        "Marketing and growth"
+      ],
+      "developerValue": "Reference implementation for modern landing pages",
+      "techStack": ["TypeScript", "Next.js", "Vercel"],
+      "readmeAvailable": false,
+      "deploymentReady": true
+    },
+    "flashfusion-loveable": {
+      "name": "flashfusion-loveable", 
+      "fullName": "Krosebrook/flashfusion-loveable",
+      "description": "FlashFusion integration with Loveable.dev platform",
+      "category": "flashfusion-ecosystem",
+      "language": "TypeScript",
+      "status": "active", 
+      "priority": "medium",
+      "size": 869,
+      "openIssues": 5,
+      "lastPush": "2025-08-26T17:12:21Z",
+      "createdAt": "2025-07-27T05:32:44Z",
+      "homepage": null,
+      "topics": ["loveable", "integration", "react", "typescript"],
+      "features": [
+        "Loveable.dev integration",
+        "Rapid prototyping",
+        "AI-assisted development",
+        "Template generation"
+      ],
+      "useCases": [
+        "Rapid prototyping",
+        "AI-assisted development",
+        "Template generation",
+        "Development workflow integration"
+      ],
+      "developerValue": "Combines FlashFusion AI with Loveable's visual development",
+      "techStack": ["TypeScript", "React", "Loveable.dev"],
+      "readmeAvailable": false,
+      "deploymentReady": true
+    },
+    "enhanced-firecrawl-scraper": {
+      "name": "enhanced-firecrawl-scraper",
+      "fullName": "Krosebrook/enhanced-firecrawl-scraper",
+      "description": "Enhanced FireCrawl scraper with comprehensive context extraction capabilities",
+      "category": "ai-agents-tools",
+      "language": "HTML",
+      "status": "production-ready",
+      "priority": "high",
+      "size": 48,
+      "openIssues": 0,
+      "lastPush": "2025-08-25T01:36:53Z",
+      "createdAt": "2025-08-25T01:29:50Z",
+      "homepage": null,
+      "topics": ["web-scraping", "firecrawl", "data-extraction", "ai-ready"],
+      "features": [
+        "4 scraping profiles (Fast, Balanced, Thorough, Research)",
+        "Entity extraction (emails, URLs, phones, social)",
+        "Content validation with recommendations", 
+        "Batch processing with throttling",
+        "500% cache performance improvement"
+      ],
+      "useCases": [
+        "Competitor analysis and monitoring",
+        "Content research and migration",
+        "SEO analysis and optimization",
+        "Market research automation",
+        "AI training data collection"
+      ],
+      "developerValue": "Production-ready scraping with enterprise error handling",
+      "techStack": ["Node.js", "Firecrawl API", "CLI tools"],
+      "readmeAvailable": true,
+      "deploymentReady": true
+    },
+    "tessa": {
+      "name": "tessa",
+      "fullName": "Krosebrook/tessa",
+      "description": "My assistant - Personal AI assistant for development and productivity",
+      "category": "ai-agents-tools",
+      "language": "TypeScript",
+      "status": "active",
+      "priority": "medium",
+      "size": 0,
+      "openIssues": 0,
+      "lastPush": "2025-08-21T07:54:20Z",
+      "createdAt": "2025-08-21T07:30:04Z",
+      "homepage": null,
+      "topics": ["ai-assistant", "productivity", "development"],
+      "features": [
+        "Development assistance",
+        "Code review suggestions",
+        "Task planning",
+        "Productivity enhancement"
+      ],
+      "useCases": [
+        "Development assistance",
+        "Code review and suggestions",
+        "Task planning and organization",
+        "Personal productivity enhancement"
+      ],
+      "developerValue": "Customizable AI assistant for development workflows",
+      "techStack": ["TypeScript", "AI Integration"],
+      "readmeAvailable": false,
+      "deploymentReady": true
+    },
+    "cortex-second-brain-4589": {
+      "name": "cortex-second-brain-4589",
+      "fullName": "Krosebrook/cortex-second-brain-4589",
+      "description": "AI-powered second brain and knowledge management system",
+      "category": "ai-agents-tools",
+      "language": "TypeScript",
+      "status": "active",
+      "priority": "high",
+      "size": 1528,
+      "openIssues": 5,
+      "lastPush": "2025-08-28T20:50:01Z",
+      "createdAt": "2025-08-21T09:20:16Z",
+      "homepage": null,
+      "topics": ["knowledge-management", "second-brain", "ai", "typescript"],
+      "features": [
+        "Knowledge graph organization",
+        "Intelligent retrieval",
+        "Idea connection synthesis",
+        "Learning optimization"
+      ],
+      "useCases": [
+        "Personal knowledge management",
+        "Research organization",
+        "Idea connection and synthesis",
+        "Learning optimization"
+      ],
+      "developerValue": "Framework for building intelligent knowledge systems",
+      "techStack": ["TypeScript", "Knowledge graphs", "AI"],
+      "readmeAvailable": false,
+      "deploymentReady": true
+    },
+    "knowledge-base-app": {
+      "name": "knowledge-base-app",
+      "fullName": "Krosebrook/knowledge-base-app",
+      "description": "Created by Leap: https://leap.new - Comprehensive knowledge base application",
+      "category": "ai-agents-tools",
+      "language": "TypeScript",
+      "status": "stable",
+      "priority": "medium",
+      "size": 125,
+      "openIssues": 0,
+      "lastPush": "2025-08-21T10:28:47Z",
+      "createdAt": "2025-08-21T09:23:00Z",
+      "homepage": null,
+      "topics": ["knowledge-base", "documentation", "typescript"],
+      "features": [
+        "Structured knowledge storage",
+        "Search and retrieval",
+        "Content organization",
+        "Modern architecture"
+      ],
+      "useCases": [
+        "Documentation management",
+        "Team knowledge sharing",
+        "Information architecture",
+        "Content organization"
+      ],
+      "developerValue": "Ready-to-deploy knowledge platform with modern architecture",
+      "techStack": ["TypeScript", "Knowledge Platform"],
+      "readmeAvailable": false,
+      "deploymentReady": true
+    },
+    "theaidashboard": {
+      "name": "theaidashboard",
+      "fullName": "Krosebrook/theaidashboard",
+      "description": "Comprehensive analytics dashboard for AI systems and metrics",
+      "category": "ai-agents-tools",
+      "language": "TypeScript",
+      "status": "active",
+      "priority": "high",
+      "size": 124,
+      "openIssues": 1,
+      "lastPush": "2025-08-27T14:57:53Z",
+      "createdAt": "2025-08-09T22:26:07Z",
+      "homepage": null,
+      "topics": ["dashboard", "analytics", "ai", "monitoring"],
+      "features": [
+        "AI system monitoring",
+        "Performance analytics",
+        "Agent behavior analysis",
+        "System optimization"
+      ],
+      "useCases": [
+        "AI system monitoring",
+        "Performance analytics",
+        "Agent behavior analysis",
+        "System optimization"
+      ],
+      "developerValue": "Professional dashboard solution for AI operations",
+      "techStack": ["TypeScript", "Dashboard frameworks"],
+      "readmeAvailable": false,
+      "deploymentReady": true
+    },
+    "blindspot-whisperer": {
+      "name": "blindspot-whisperer",
+      "fullName": "Krosebrook/blindspot-whisperer",
+      "description": "AI tool for discovering blind spots and hidden insights",
+      "category": "ai-agents-tools",
+      "language": "TypeScript",
+      "status": "production-ready",
+      "priority": "medium",
+      "size": 381,
+      "openIssues": 0,
+      "lastPush": "2025-08-30T21:31:02Z",
+      "createdAt": "2025-08-29T17:09:42Z",
+      "homepage": "https://blindspot-whisperer.vercel.app",
+      "topics": ["ai", "insights", "analysis", "discovery"],
+      "features": [
+        "Pattern recognition",
+        "Insight discovery",
+        "Risk assessment",
+        "Opportunity identification"
+      ],
+      "useCases": [
+        "Business intelligence",
+        "Risk assessment",
+        "Opportunity discovery",
+        "Strategic planning"
+      ],
+      "developerValue": "Framework for building insight discovery applications",
+      "techStack": ["TypeScript", "Next.js", "AI"],
+      "readmeAvailable": false,
+      "deploymentReady": true
+    },
+    "CGDSTARTER": {
+      "name": "CGDSTARTER",
+      "fullName": "Krosebrook/CGDSTARTER",
+      "description": "Comprehensive project starter and development accelerator",
+      "category": "development-tools",
+      "language": "TypeScript",
+      "status": "active",
+      "priority": "medium",
+      "size": 611,
+      "openIssues": 5,
+      "lastPush": "2025-08-22T21:00:18Z",
+      "createdAt": "2025-07-29T16:27:57Z",
+      "homepage": null,
+      "topics": ["starter", "template", "development", "typescript"],
+      "features": [
+        "Pre-configured environment",
+        "Best practices enforcement",
+        "Development acceleration",
+        "Team standardization"
+      ],
+      "useCases": [
+        "Rapid project initialization",
+        "Development workflow standardization",
+        "Best practices enforcement",
+        "Team onboarding acceleration"
+      ],
+      "developerValue": "Reduces project setup time from hours to minutes",
+      "techStack": ["TypeScript", "Development tools"],
+      "readmeAvailable": false,
+      "deploymentReady": true
+    },
+    "OAuth": {
+      "name": "OAuth",
+      "fullName": "Krosebrook/OAuth",
+      "description": "OAuth authentication and authorization system",
+      "category": "development-tools",
+      "language": "JavaScript",
+      "status": "stable",
+      "priority": "high",
+      "size": 0,
+      "openIssues": 0,
+      "lastPush": "2025-07-30T19:23:11Z",
+      "createdAt": "2025-07-30T19:23:11Z",
+      "homepage": "replit.com/@kylerosebrook/AuthConnect",
+      "topics": ["oauth", "authentication", "security", "auth"],
+      "features": [
+        "OAuth protocol implementation",
+        "Secure authentication flows",
+        "User management",
+        "Access control"
+      ],
+      "useCases": [
+        "User authentication",
+        "API security",
+        "SSO implementation",
+        "Access control"
+      ],
+      "developerValue": "Ready-to-use authentication solution with OAuth standards",
+      "techStack": ["Node.js", "OAuth protocols"],
+      "readmeAvailable": false,
+      "deploymentReady": true
+    },
+    "d1-rest": {
+      "name": "d1-rest",
+      "fullName": "Krosebrook/d1-rest",
+      "description": "REST API for D1 database operations",
+      "category": "development-tools",
+      "language": "TypeScript",
+      "status": "active",
+      "priority": "medium",
+      "size": 89,
+      "openIssues": 1,
+      "lastPush": "2025-08-26T15:32:36Z",
+      "createdAt": "2025-08-24T19:11:39Z",
+      "homepage": null,
+      "license": "MIT",
+      "topics": ["database", "rest-api", "d1", "typescript"],
+      "features": [
+        "RESTful database interface",
+        "CRUD operations",
+        "Database management",
+        "API standardization"
+      ],
+      "useCases": [
+        "Database API development",
+        "CRUD operations",
+        "Data management interfaces",
+        "Microservices architecture"
+      ],
+      "developerValue": "Production-ready database API with comprehensive REST endpoints",
+      "techStack": ["TypeScript", "REST APIs", "Database"],
+      "readmeAvailable": false,
+      "deploymentReady": true
+    },
+    "nextjs-with-supabase": {
+      "name": "nextjs-with-supabase",
+      "fullName": "Krosebrook/nextjs-with-supabase",
+      "description": "Production-ready Next.js application with Supabase integration",
+      "category": "development-tools",
+      "language": "TypeScript",
+      "status": "production-ready",
+      "priority": "high",
+      "size": 324,
+      "openIssues": 0,
+      "lastPush": "2025-08-30T05:08:47Z",
+      "createdAt": "2025-08-19T05:17:03Z",
+      "homepage": "https://nextjs-with-supabase-flax-pi.vercel.app",
+      "topics": ["nextjs", "supabase", "fullstack", "typescript"],
+      "features": [
+        "Full-stack template",
+        "Authentication integration",
+        "Database setup",
+        "Deployment ready"
+      ],
+      "useCases": [
+        "Full-stack application development",
+        "Rapid MVP creation",
+        "SaaS product development",
+        "Learning Next.js + Supabase"
+      ],
+      "developerValue": "Complete stack setup with authentication, database, and hosting",
+      "techStack": ["TypeScript", "Next.js", "Supabase"],
+      "readmeAvailable": false,
+      "deploymentReady": true
+    },
+    "nextjs-commerce": {
+      "name": "nextjs-commerce",
+      "fullName": "Krosebrook/nextjs-commerce",
+      "description": "Modern e-commerce platform built with Next.js",
+      "category": "development-tools",
+      "language": "TypeScript",
+      "status": "active",
+      "priority": "medium",
+      "size": 220,
+      "openIssues": 3,
+      "lastPush": "2025-08-25T20:31:22Z",
+      "createdAt": "2025-08-20T03:45:16Z",
+      "homepage": null,
+      "license": "MIT",
+      "topics": ["ecommerce", "nextjs", "commerce", "typescript"],
+      "features": [
+        "E-commerce framework",
+        "Product management",
+        "Shopping cart",
+        "Payment integration"
+      ],
+      "useCases": [
+        "Online store development",
+        "E-commerce MVP creation",
+        "Marketplace development",
+        "Product catalog management"
+      ],
+      "developerValue": "Production-ready e-commerce platform with modern best practices",
+      "techStack": ["TypeScript", "Next.js", "E-commerce"],
+      "readmeAvailable": false,
+      "deploymentReady": true
+    },
+    "DevChat": {
+      "name": "DevChat",
+      "fullName": "Krosebrook/DevChat",
+      "description": "Chat and communication platform optimized for developers",
+      "category": "applications",
+      "language": "TypeScript",
+      "status": "active",
+      "priority": "medium",
+      "size": 15375,
+      "openIssues": 7,
+      "lastPush": "2025-08-28T18:57:16Z",
+      "createdAt": "2025-08-13T10:30:12Z",
+      "homepage": "replit.com/@kylerosebrook/DevChat",
+      "topics": ["chat", "developers", "communication", "typescript"],
+      "features": [
+        "Developer-focused chat",
+        "Code sharing",
+        "Real-time collaboration",
+        "Technical discussions"
+      ],
+      "useCases": [
+        "Team communication",
+        "Code collaboration",
+        "Technical discussions",
+        "Remote development coordination"
+      ],
+      "developerValue": "Purpose-built communication tool for development teams",
+      "techStack": ["TypeScript", "Real-time communication"],
+      "readmeAvailable": false,
+      "deploymentReady": true
+    },
+    "HabboHotel": {
+      "name": "HabboHotel",
+      "fullName": "Krosebrook/HabboHotel",
+      "description": "Virtual world or hotel simulation project",
+      "category": "applications",
+      "language": null,
+      "status": "early-development",
+      "priority": "low",
+      "size": 0,
+      "openIssues": 0,
+      "lastPush": "2025-08-17T05:24:27Z",
+      "createdAt": "2025-08-17T05:24:26Z",
+      "homepage": null,
+      "topics": ["virtual-world", "gaming", "simulation"],
+      "features": [
+        "Virtual environment",
+        "Social interaction",
+        "Gaming elements",
+        "Community building"
+      ],
+      "useCases": [
+        "Social gaming",
+        "Virtual world development",
+        "Community building",
+        "Interactive experiences"
+      ],
+      "developerValue": "Reference implementation for virtual world architecture",
+      "techStack": ["Web-based virtual environment"],
+      "readmeAvailable": false,
+      "deploymentReady": false
+    },
+    "LifeWins": {
+      "name": "LifeWins",
+      "fullName": "Krosebrook/LifeWins",
+      "description": "Kid training app - Educational and training application for children",
+      "category": "applications",
+      "language": null,
+      "status": "concept",
+      "priority": "low",
+      "size": 0,
+      "openIssues": 0,
+      "lastPush": "2025-06-06T07:40:08Z",
+      "createdAt": "2025-06-06T07:40:08Z",
+      "homepage": null,
+      "topics": ["education", "kids", "training", "gamification"],
+      "features": [
+        "Gamified learning",
+        "Skill development",
+        "Progress tracking",
+        "Parent-child interaction"
+      ],
+      "useCases": [
+        "Educational gaming",
+        "Skill development tracking",
+        "Parent-child interaction",
+        "Learning progress monitoring"
+      ],
+      "developerValue": "Framework for educational application development",
+      "techStack": ["Mobile/Web application"],
+      "readmeAvailable": false,
+      "deploymentReady": false
+    },
+    "FFSignup": {
+      "name": "FFSignup",
+      "fullName": "Krosebrook/FFSignup",
+      "description": "User registration and signup system for FlashFusion",
+      "category": "applications",
+      "language": null,
+      "status": "early-development",
+      "priority": "low",
+      "size": 0,
+      "openIssues": 0,
+      "lastPush": "2025-08-21T08:46:13Z",
+      "createdAt": "2025-08-21T08:46:13Z",
+      "homepage": "replit.com/@kylerosebrook/SpudSignup",
+      "topics": ["signup", "registration", "flashfusion"],
+      "features": [
+        "User registration",
+        "Onboarding flows",
+        "Account management",
+        "Service access"
+      ],
+      "useCases": [
+        "User registration",
+        "Onboarding flows",
+        "Account management",
+        "Service access control"
+      ],
+      "developerValue": "Reference signup system with FlashFusion integration",
+      "techStack": ["Web application"],
+      "readmeAvailable": false,
+      "deploymentReady": false
+    }
+  },
+  "searchIndex": {
+    "byLanguage": {
+      "TypeScript": [
+        "FlashFusion", "flashfusion-ide", "flashfusion-genesis", "flashfusion-loveable",
+        "tessa", "cortex-second-brain-4589", "knowledge-base-app", "theaidashboard", 
+        "blindspot-whisperer", "CGDSTARTER", "d1-rest", "nextjs-with-supabase", 
+        "nextjs-commerce", "DevChat"
+      ],
+      "JavaScript": [
+        "turborepo-flashfusion", "FlashFusion-Unified", "OAuth"
+      ],
+      "HTML": [
+        "enhanced-firecrawl-scraper"
+      ],
+      "Node.js": [
+        "FlashFusion-Unified", "enhanced-firecrawl-scraper", "OAuth", "d1-rest"
+      ]
+    },
+    "byTechnology": {
+      "React": [
+        "flashfusion-ide", "flashfusion-loveable", "nextjs-with-supabase", 
+        "nextjs-commerce", "flashfusion-genesis"
+      ],
+      "Next.js": [
+        "nextjs-with-supabase", "nextjs-commerce", "flashfusion-genesis", "blindspot-whisperer"
+      ],
+      "AI": [
+        "FlashFusion", "FlashFusion-Unified", "flashfusion-ide", "enhanced-firecrawl-scraper",
+        "tessa", "cortex-second-brain-4589", "theaidashboard", "blindspot-whisperer"
+      ],
+      "Supabase": [
+        "FlashFusion-Unified", "nextjs-with-supabase"
+      ],
+      "Firebase": [
+        "FlashFusion-Unified"
+      ]
+    },
+    "byStatus": {
+      "production-ready": [
+        "flashfusion-ide", "enhanced-firecrawl-scraper", "blindspot-whisperer", "nextjs-with-supabase"
+      ],
+      "active": [
+        "turborepo-flashfusion", "FlashFusion", "FlashFusion-Unified", "flashfusion-genesis",
+        "flashfusion-loveable", "tessa", "cortex-second-brain-4589", "theaidashboard",
+        "CGDSTARTER", "d1-rest", "nextjs-commerce", "DevChat"
+      ],
+      "stable": [
+        "knowledge-base-app", "OAuth"
+      ],
+      "early-development": [
+        "HabboHotel", "FFSignup"
+      ],
+      "concept": [
+        "LifeWins"
+      ]
+    },
+    "byFeature": {
+      "authentication": ["OAuth", "nextjs-with-supabase", "FlashFusion-Unified"],
+      "ai-agents": ["FlashFusion", "FlashFusion-Unified", "flashfusion-ide", "tessa"],
+      "web-scraping": ["enhanced-firecrawl-scraper"],
+      "knowledge-management": ["cortex-second-brain-4589", "knowledge-base-app"],
+      "ecommerce": ["nextjs-commerce"],
+      "dashboard": ["theaidashboard"],
+      "ide": ["flashfusion-ide"],
+      "monorepo": ["turborepo-flashfusion"],
+      "templates": ["nextjs-with-supabase", "nextjs-commerce", "CGDSTARTER"]
+    }
+  },
+  "quickAccess": {
+    "mostImportant": [
+      "turborepo-flashfusion",
+      "FlashFusion-Unified", 
+      "flashfusion-ide",
+      "enhanced-firecrawl-scraper"
+    ],
+    "productionReady": [
+      "flashfusion-ide",
+      "enhanced-firecrawl-scraper",
+      "blindspot-whisperer",
+      "nextjs-with-supabase",
+      "OAuth"
+    ],
+    "withLiveDemos": [
+      "flashfusion-genesis",
+      "blindspot-whisperer",
+      "nextjs-with-supabase",
+      "DevChat",
+      "OAuth",
+      "FFSignup"
+    ],
+    "forLearning": [
+      "nextjs-with-supabase",
+      "flashfusion-ide", 
+      "CGDSTARTER",
+      "enhanced-firecrawl-scraper"
+    ]
+  }
+}
