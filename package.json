@@ -12,7 +12,8 @@
     "restore-state": "node restore-session.js",
     "next-steps": "node restore-session.js",
     "deploy": "vercel --prod",
-    "ff": "node tools/cli/ff-cli.js"
+    "ff": "node tools/cli/ff-cli.js",
+    "discover": "node tools/cli/discover.js"
   },
   "devDependencies": {
     "turbo": "^2.3.0",
