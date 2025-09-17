@@ -1,0 +1,38 @@
+{
+  "name": "@flashfusion/testing",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
+    "lint": "eslint src/",
+    "test": "vitest",
+    "test:unit": "vitest --run --coverage",
+    "test:integration": "vitest --run --config vitest.integration.config.ts",
+    "test:watch": "vitest --watch"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0",
+    "@testing-library/jest-dom": "^6.0.0",
+    "@types/express": "^5.0.3",
+    "@vitest/coverage-v8": "^1.0.0",
+    "express": "^4.21.2",
+    "jsdom": "^23.0.0",
+    "pg": "^8.11.0",
+    "supertest": "^6.3.0",
+    "testcontainers": "^10.0.0",
+    "vitest": "^1.0.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/pg": "^8.11.0",
+    "@types/supertest": "^6.0.0",
+    "@types/ws": "^8.5.0",
+    "eslint": "^8.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}
