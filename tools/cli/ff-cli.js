@@ -575,6 +575,13 @@ ${colors.bright}🚀 Deployment & Hosting${colors.reset}
   ff:deploy:edge             Deploy Supabase edge functions
   ff:deploy:all              Full stack deploy (web + edge + DB)
 
+${colors.bright}🐳 Container Management${colors.reset}
+  ff:container:build         Build Docker image locally
+  ff:container:publish       Build and push to registry
+  ff:container:deploy        Deploy to environment
+  ff:container:ci            Run CI/CD pipeline
+  ff:container:status        Show container agent status
+
 ${colors.bright}🔐 Supabase DB + Auth${colors.reset}
   ff:supa:start              Run Supabase locally
   ff:supa:push               Push local changes to remote
@@ -648,6 +655,12 @@ ${colors.bright}🤖 Agents Status:${colors.reset}
   ${colors.green}✅${colors.reset} Optimizer Active
   ${colors.green}✅${colors.reset} Analyzer Active
   ${colors.green}✅${colors.reset} Automator Active
+  ${colors.green}✅${colors.reset} Container Publisher Active
+
+${colors.bright}🐳 Container Services:${colors.reset}
+  ${colors.green}🟢${colors.reset} Docker Engine Available
+  ${colors.green}🟢${colors.reset} Build Agent Ready
+  ${colors.green}🟢${colors.reset} Registry Support Active
 
 ${colors.bright}📈 System Health: Excellent${colors.reset}
 ${colors.bright}🔧 Last Updated: ${new Date().toLocaleString()}${colors.reset}
@@ -812,6 +825,179 @@ ${colors.bright}🚀 Frameworks:${colors.reset}
             }
         } catch (error) {
             log.error(`List failed: ${error.message}`);
+        }
+    },
+
+    // Container Publish Agent Commands
+    'container:build': async () => {
+        log.title('🐳 Building Container Image');
+        
+        const args = process.argv.slice(3);
+        const [imageName] = args;
+        
+        if (!imageName) {
+            log.error('Usage: ff container:build <image-name> [options]');
+            log.info('Example: ff container:build my-app');
+            return;
+        }
+        
+        try {
+            const { ContainerPublishAgent } = require('../../packages/ai-agents/core/ContainerPublishAgent');
+            const agent = new ContainerPublishAgent();
+            
+            await agent.initialize();
+            
+            const result = await agent.buildImage({
+                sourcePath: process.cwd(),
+                imageName,
+                tags: ['latest'],
+                registry: 'localhost:5000',
+                push: false
+            });
+            
+            if (result.success) {
+                log.success(`Container built successfully: ${result.imageName}`);
+                log.info(`📦 Image ID: ${result.imageId}`);
+                log.info(`🏷️ Tags: ${result.tags.join(', ')}`);
+                log.info(`⏱️ Build time: ${Math.round(result.buildTime / 1000)}s`);
+            }
+        } catch (error) {
+            log.error(`Container build failed: ${error.message}`);
+        }
+    },
+
+    'container:publish': async () => {
+        log.title('🚀 Publishing Container to Registry');
+        
+        const args = process.argv.slice(3);
+        const [imageName, registry] = args;
+        
+        if (!imageName || !registry) {
+            log.error('Usage: ff container:publish <image-name> <registry>');
+            log.info('Example: ff container:publish my-app docker.io');
+            return;
+        }
+        
+        try {
+            const { ContainerPublishAgent } = require('../../packages/ai-agents/core/ContainerPublishAgent');
+            const agent = new ContainerPublishAgent({
+                defaultRegistry: registry
+            });
+            
+            await agent.initialize();
+            
+            const result = await agent.buildImage({
+                sourcePath: process.cwd(),
+                imageName,
+                tags: ['latest'],
+                registry,
+                push: true
+            });
+            
+            if (result.success) {
+                log.success(`Container published successfully!`);
+                log.info(`📦 Image: ${result.imageName}`);
+                log.info(`🌐 Registry URLs:`);
+                result.registryUrls.forEach(url => {
+                    log.info(`  - ${url}`);
+                });
+                log.info(`⏱️ Total time: ${Math.round(result.buildTime / 1000)}s`);
+            }
+        } catch (error) {
+            log.error(`Container publish failed: ${error.message}`);
+        }
+    },
+
+    'container:deploy': async () => {
+        log.title('🚀 Deploying Container to Environment');
+        
+        const args = process.argv.slice(3);
+        const [environment] = args;
+        
+        if (!environment) {
+            log.error('Usage: ff container:deploy <environment>');
+            log.info('Environments: development, staging, production');
+            return;
+        }
+        
+        try {
+            const { ContainerDeploymentWorkflow } = require('../../packages/ai-agents/workflows/ContainerDeploymentWorkflow');
+            const workflow = new ContainerDeploymentWorkflow();
+            
+            await workflow.initialize();
+            
+            const result = await workflow.deployToEnvironment(environment, {
+                sourcePath: process.cwd()
+            });
+            
+            if (result.success) {
+                log.success(`Deployed to ${environment} successfully!`);
+                log.info(`📦 Image: ${result.deployment.imageName}`);
+                log.info(`🏷️ Tags: ${result.deployment.tags.join(', ')}`);
+                log.info(`🌐 Registry: ${result.deployment.registry}`);
+                log.info(`⏱️ Deploy time: ${Math.round(result.deployment.buildTime / 1000)}s`);
+            }
+        } catch (error) {
+            log.error(`Container deployment failed: ${error.message}`);
+        }
+    },
+
+    'container:ci': async () => {
+        log.title('🔄 Running CI/CD Pipeline');
+        
+        const args = process.argv.slice(3);
+        const [branch] = args;
+        
+        try {
+            const { ContainerDeploymentWorkflow } = require('../../packages/ai-agents/workflows/ContainerDeploymentWorkflow');
+            const workflow = new ContainerDeploymentWorkflow();
+            
+            await workflow.initialize();
+            
+            const result = await workflow.executeCIPipeline({
+                branch: branch || 'main',
+                sourcePath: process.cwd(),
+                runTests: true
+            });
+            
+            if (result.success) {
+                log.success(`CI/CD pipeline completed successfully!`);
+                log.info(`🌿 Branch: ${branch || 'main'}`);
+                log.info(`🎯 Environment: ${result.environment}`);
+                log.info(`📦 Image: ${result.deployment.imageName}`);
+                log.info(`🌐 Registry: ${result.deployment.registry}`);
+            }
+        } catch (error) {
+            log.error(`CI/CD pipeline failed: ${error.message}`);
+        }
+    },
+
+    'container:status': async () => {
+        log.title('📊 Container Agent Status');
+        
+        try {
+            const { ContainerPublishAgent } = require('../../packages/ai-agents/core/ContainerPublishAgent');
+            const agent = new ContainerPublishAgent();
+            
+            await agent.initialize();
+            const status = agent.getStatus();
+            
+            console.log(`
+${colors.bright}🐳 Container Publish Agent${colors.reset}
+
+${colors.cyan}ID:${colors.reset} ${status.id}
+${colors.cyan}Name:${colors.reset} ${status.name}
+${colors.cyan}Status:${colors.reset} ${status.status === 'ready' ? `${colors.green}${status.status}${colors.reset}` : `${colors.yellow}${status.status}${colors.reset}`}
+${colors.cyan}Active Tasks:${colors.reset} ${status.activeTasks}
+
+${colors.bright}📋 Capabilities:${colors.reset}
+${status.capabilities.map(cap => `  • ${cap}`).join('\n')}
+
+${colors.bright}🌐 Supported Registries:${colors.reset}
+${status.registries.map(reg => `  • ${reg}`).join('\n')}
+            `);
+        } catch (error) {
+            log.error(`Status check failed: ${error.message}`);
         }
     }
 };
