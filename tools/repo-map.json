@@ -1,0 +1,329 @@
+{
+  "version": "1.0.0",
+  "description": "Repository mapping configuration for Krosebrook organization migration to turborepo-flashfusion monorepo",
+  "generated_at": "2025-01-17T12:00:00.000Z",
+  "total_repositories": 19,
+  "migration_methods": {
+    "subtree": "Git subtree integration preserving history",
+    "copy": "Copy repository content without git history",
+    "reference": "Create reference documentation only"
+  },
+  "repositories": [
+    {
+      "repo_name": "turborepo-flashfusion",
+      "destination_path": ".",
+      "migration_method": "current",
+      "category": "monorepo-root",
+      "description": "Current monorepo - no migration needed",
+      "technology": "JavaScript",
+      "priority": "current",
+      "status": "active"
+    },
+    {
+      "repo_name": "flashfusion-ide",
+      "destination_path": "apps/ide",
+      "migration_method": "subtree",
+      "category": "core-applications",
+      "description": "Web-based IDE with Monaco editor - AI-powered development environment",
+      "technology": "TypeScript",
+      "priority": "high",
+      "status": "production-ready",
+      "dependencies": ["Monaco", "Xterm", "Zustand"],
+      "integration_notes": "High-priority core application for development environment"
+    },
+    {
+      "repo_name": "FlashFusion-Unified",
+      "destination_path": "packages/unified-legacy",
+      "migration_method": "subtree",
+      "category": "legacy-platform",
+      "description": "Legacy unified platform - Express.js backend with comprehensive features",
+      "technology": "JavaScript",
+      "priority": "high",
+      "status": "feature-complete",
+      "dependencies": ["Anthropic", "Supabase", "Redis"],
+      "integration_notes": "Extract patterns and services into packages, migrate core backend logic"
+    },
+    {
+      "repo_name": "theaidashboard",
+      "destination_path": "apps/dashboard",
+      "migration_method": "subtree",
+      "category": "core-applications",
+      "description": "TypeScript AI dashboard - Comprehensive AI management interface",
+      "technology": "TypeScript",
+      "priority": "medium",
+      "status": "stable",
+      "dependencies": ["AI Services"],
+      "integration_notes": "Primary dashboard for AI management and monitoring"
+    },
+    {
+      "repo_name": "knowledge-base-app",
+      "destination_path": "apps/knowledge-base",
+      "migration_method": "subtree",
+      "category": "supporting-applications",
+      "description": "TypeScript knowledge management system",
+      "technology": "TypeScript",
+      "priority": "medium",
+      "status": "stable",
+      "dependencies": ["Database"],
+      "integration_notes": "Knowledge management and documentation system"
+    },
+    {
+      "repo_name": "flashfusion-loveable",
+      "destination_path": "apps/loveable",
+      "migration_method": "subtree",
+      "category": "supporting-applications",
+      "description": "TypeScript project - AI-powered development platform",
+      "technology": "TypeScript",
+      "priority": "medium",
+      "status": "active-development",
+      "dependencies": ["TBD"],
+      "integration_notes": "AI-powered development platform integration"
+    },
+    {
+      "repo_name": "flashfusion-genesis",
+      "destination_path": "apps/genesis",
+      "migration_method": "subtree",
+      "category": "supporting-applications",
+      "description": "TypeScript project - Genesis framework for FlashFusion platform",
+      "technology": "TypeScript",
+      "priority": "medium",
+      "status": "active-development",
+      "dependencies": ["TBD"],
+      "integration_notes": "Genesis framework for platform initialization"
+    },
+    {
+      "repo_name": "cortex-second-brain-4589",
+      "destination_path": "packages/ai-brain",
+      "migration_method": "subtree",
+      "category": "ai-packages",
+      "description": "TypeScript brain system - Advanced knowledge processing",
+      "technology": "TypeScript",
+      "priority": "medium",
+      "status": "active-development",
+      "dependencies": ["AI Models"],
+      "integration_notes": "Advanced AI brain system for knowledge processing"
+    },
+    {
+      "repo_name": "DevChat",
+      "destination_path": "apps/dev-chat",
+      "migration_method": "subtree",
+      "category": "supporting-applications",
+      "description": "TypeScript chat system - Developer communication platform",
+      "technology": "TypeScript",
+      "priority": "medium",
+      "status": "active-development",
+      "dependencies": ["Real-time messaging"],
+      "integration_notes": "Developer communication and collaboration platform"
+    },
+    {
+      "repo_name": "blindspot-whisperer",
+      "destination_path": "packages/ai-analysis",
+      "migration_method": "subtree",
+      "category": "ai-packages",
+      "description": "TypeScript project - AI-powered blindspot detection",
+      "technology": "TypeScript",
+      "priority": "low",
+      "status": "stable",
+      "dependencies": ["AI Services"],
+      "integration_notes": "AI analysis tools for blindspot detection"
+    },
+    {
+      "repo_name": "enhanced-firecrawl-scraper",
+      "destination_path": "tools/enhanced-scraper",
+      "migration_method": "subtree",
+      "category": "development-tools",
+      "description": "Web scraping capabilities - Enhanced Firecrawl integration",
+      "technology": "HTML/JavaScript",
+      "priority": "medium",
+      "status": "stable",
+      "dependencies": ["Firecrawl"],
+      "integration_notes": "Enhanced web scraping capabilities for data extraction"
+    },
+    {
+      "repo_name": "d1-rest",
+      "destination_path": "packages/database/d1-rest",
+      "migration_method": "subtree",
+      "category": "infrastructure-packages",
+      "description": "TypeScript D1 database REST API",
+      "technology": "TypeScript",
+      "priority": "medium",
+      "status": "stable",
+      "dependencies": ["Cloudflare D1"],
+      "integration_notes": "D1 database REST API abstraction layer"
+    },
+    {
+      "repo_name": "nextjs-with-supabase",
+      "destination_path": "templates/supabase",
+      "migration_method": "copy",
+      "category": "templates",
+      "description": "Next.js + Supabase template - Production-ready template",
+      "technology": "TypeScript",
+      "priority": "low",
+      "status": "template",
+      "dependencies": ["Next.js", "Supabase"],
+      "integration_notes": "Template for Next.js applications with Supabase integration"
+    },
+    {
+      "repo_name": "nextjs-commerce",
+      "destination_path": "templates/commerce",
+      "migration_method": "copy",
+      "category": "templates",
+      "description": "Next.js commerce solution - E-commerce platform",
+      "technology": "TypeScript",
+      "priority": "low",
+      "status": "template",
+      "dependencies": ["Next.js", "Commerce"],
+      "integration_notes": "E-commerce template with Next.js"
+    },
+    {
+      "repo_name": "CGDSTARTER",
+      "destination_path": "templates/starter",
+      "migration_method": "copy",
+      "category": "templates",
+      "description": "TypeScript starter template - Code generation and development starter",
+      "technology": "TypeScript",
+      "priority": "low",
+      "status": "template",
+      "dependencies": ["TypeScript"],
+      "integration_notes": "Basic starter template for new projects"
+    },
+    {
+      "repo_name": "OAuth",
+      "destination_path": "packages/auth/oauth",
+      "migration_method": "subtree",
+      "category": "authentication-packages",
+      "description": "OAuth implementation - Authentication service",
+      "technology": "JavaScript",
+      "priority": "medium",
+      "status": "stable",
+      "dependencies": ["OAuth standards"],
+      "integration_notes": "OAuth authentication implementation"
+    },
+    {
+      "repo_name": "FFSignup",
+      "destination_path": "packages/auth/signup",
+      "migration_method": "subtree",
+      "category": "authentication-packages",
+      "description": "Signup service - User registration and onboarding",
+      "technology": "JavaScript",
+      "priority": "medium",
+      "status": "stable",
+      "dependencies": ["User management"],
+      "integration_notes": "User registration and onboarding service"
+    },
+    {
+      "repo_name": "tessa",
+      "destination_path": "packages/ai-assistants/tessa",
+      "migration_method": "subtree",
+      "category": "ai-packages",
+      "description": "Assistant service - AI-powered virtual assistant",
+      "technology": "Python",
+      "priority": "medium",
+      "status": "stable",
+      "dependencies": ["AI Models"],
+      "integration_notes": "AI-powered virtual assistant service"
+    },
+    {
+      "repo_name": "HabboHotel",
+      "destination_path": "packages/games/habbo",
+      "migration_method": "subtree",
+      "category": "specialized-projects",
+      "description": "Gaming project - Hotel simulation game",
+      "technology": "Java",
+      "priority": "low",
+      "status": "specialized",
+      "dependencies": ["Java runtime"],
+      "integration_notes": "Specialized gaming project - may need separate deployment"
+    }
+  ],
+  "migration_phases": {
+    "phase_1_core": {
+      "description": "Core applications and high-priority integrations",
+      "repositories": [
+        "flashfusion-ide",
+        "FlashFusion-Unified",
+        "theaidashboard"
+      ],
+      "timeline": "Week 1-2"
+    },
+    "phase_2_supporting": {
+      "description": "Supporting applications and medium-priority packages",
+      "repositories": [
+        "knowledge-base-app",
+        "flashfusion-loveable",
+        "flashfusion-genesis",
+        "cortex-second-brain-4589",
+        "DevChat",
+        "enhanced-firecrawl-scraper",
+        "d1-rest"
+      ],
+      "timeline": "Week 3-4"
+    },
+    "phase_3_infrastructure": {
+      "description": "Authentication, AI packages, and tools",
+      "repositories": [
+        "OAuth",
+        "FFSignup",
+        "tessa",
+        "blindspot-whisperer"
+      ],
+      "timeline": "Week 5"
+    },
+    "phase_4_templates": {
+      "description": "Templates and specialized projects",
+      "repositories": [
+        "nextjs-with-supabase",
+        "nextjs-commerce",
+        "CGDSTARTER",
+        "HabboHotel"
+      ],
+      "timeline": "Week 6"
+    }
+  },
+  "directory_structure": {
+    "apps/": {
+      "description": "Standalone applications with their own deployments",
+      "examples": ["apps/ide", "apps/dashboard", "apps/knowledge-base"]
+    },
+    "packages/": {
+      "description": "Shared packages and libraries",
+      "examples": ["packages/auth", "packages/ai-brain", "packages/database"]
+    },
+    "tools/": {
+      "description": "Development and operational tools",
+      "examples": ["tools/enhanced-scraper", "tools/cli"]
+    },
+    "templates/": {
+      "description": "Project templates and starter kits",
+      "examples": ["templates/supabase", "templates/commerce"]
+    }
+  },
+  "integration_guidelines": {
+    "subtree_method": {
+      "description": "Use for repositories that will be actively developed",
+      "commands": [
+        "git remote add <repo_name> https://github.com/Krosebrook/<repo_name>.git",
+        "git fetch <repo_name>",
+        "git subtree add --prefix=<destination_path> <repo_name> main --squash"
+      ]
+    },
+    "copy_method": {
+      "description": "Use for templates and reference implementations",
+      "commands": [
+        "git clone https://github.com/Krosebrook/<repo_name>.git /tmp/<repo_name>",
+        "mkdir -p <destination_path>",
+        "cp -r /tmp/<repo_name>/* <destination_path>/",
+        "git add <destination_path>",
+        "git commit -m 'Add <repo_name> content to <destination_path>'"
+      ]
+    }
+  },
+  "validation": {
+    "total_mapped_repositories": 19,
+    "apps_count": 6,
+    "packages_count": 9,
+    "tools_count": 1,
+    "templates_count": 3,
+    "current_monorepo": 1
+  }
+}
