@@ -8,6 +8,10 @@
     "build": "echo 'No build needed for Node.js API'",
     "dev": "nodemon main.js",
     "start": "node main.js",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "type-check": "echo 'No TypeScript in this API'"
   },
@@ -24,6 +28,7 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.0"
+    "nodemon": "^3.0.0",
+    "vitest": "^1.0.0"
   }
 }

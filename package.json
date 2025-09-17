@@ -7,6 +7,9 @@
     "lint": "turbo lint",
     "format": "turbo format",
     "test": "turbo test",
+    "test:unit": "turbo test:unit",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
     "type-check": "turbo type-check",
     "clean": "turbo clean",
     "restore-state": "node restore-session.js",
@@ -15,12 +18,16 @@
     "ff": "node tools/cli/ff-cli.js"
   },
   "devDependencies": {
-    "turbo": "^2.3.0",
     "@turbo/gen": "^2.3.0",
-    "typescript": "^5.0.0",
     "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/ui": "^3.2.4",
     "eslint": "^8.0.0",
-    "prettier": "^3.0.0"
+    "jsdom": "^27.0.0",
+    "prettier": "^3.0.0",
+    "turbo": "^2.3.0",
+    "typescript": "^5.0.0",
+    "vitest": "^3.2.4"
   },
   "packageManager": "npm@10.0.0",
   "workspaces": [

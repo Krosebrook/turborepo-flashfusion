@@ -6,11 +6,16 @@
   "scripts": {
     "build": "echo 'No build needed for shared utilities'",
     "dev": "echo 'Shared utilities ready for development'",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "echo 'Linting shared utilities'",
     "type-check": "echo 'Type checking shared utilities'"
   },
   "dependencies": {},
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
   }
 }

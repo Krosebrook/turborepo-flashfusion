@@ -6,6 +6,10 @@
     "build": "next build",
     "dev": "next dev --port 3000",
     "start": "next start",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
   },
@@ -37,6 +41,9 @@
     "autoprefixer": "^10.4.16",
     "eslint": "^9.33.0",
     "postcss": "^8.4.31",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "vitest": "^1.0.0",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/jest-dom": "^6.0.0"
   }
 }
