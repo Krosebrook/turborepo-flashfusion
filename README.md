@@ -55,6 +55,24 @@ npm run restore-state   # Restore session context
 npm run ff              # Run FlashFusion CLI
 ```
 
+### 🔄 Repository Migration Commands
+```bash
+# Migration Management
+npm run ff -- migrate help              # Show migration help
+npm run ff -- migrate all               # Run complete migration
+npm run ff -- migrate phase1-ai         # Integrate AI & Agent repositories
+npm run ff -- migrate phase1-data       # Integrate Data & Crawling repositories
+
+# Validation & Testing  
+npm run ff -- validate quick            # Quick validation
+npm run ff -- validate all              # Complete validation
+npm run ff -- validate build            # Test build system
+
+# Documentation
+npm run ff -- docs migration            # View migration plan
+npm run ff -- docs checklist            # View migration checklist
+```
+
 ### Individual Package Development
 ```bash
 # Web application
@@ -149,18 +167,39 @@ npm run deploy
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📖 Documentation
+## 📚 Documentation
 
+### Core Documentation
 - [FlashFusion Overview](./README-flashfusion.md)
+- [Repository Requirements](./REPOSITORY-REQUIREMENTS.md)
 - [Best Practices](./knowledge-base/best-practices.md)
 - [AI Agent Patterns](./knowledge-base/agent-patterns.js)
+
+### Migration Documentation
+- [**Monorepo Integration Plan**](./docs/MONOREPO-INTEGRATION-PLAN.md) - Complete integration strategy for all Krosebrook repositories
+- [**Migration Checklist**](./docs/MIGRATION-CHECKLIST.md) - Step-by-step migration checklist
+- [**Migration Tools**](./tools/README.md) - Tools and scripts for repository integration
+
+### External Resources
 - [Turborepo Docs](https://turborepo.com/docs)
 
 ## 🆘 Support
 
+### Development Support
 - Run `npm run restore-state` for context restoration
 - Check `knowledge-base/` for development patterns
 - Review logs in `.turborepo-state.json` for session history
+
+### Migration Support
+- Use `npm run ff -- validate quick` to check integration status
+- Review `docs/MIGRATION-CHECKLIST.md` for step-by-step guidance
+- Run `npm run ff -- migrate help` for migration commands
+- Check `validation-report.txt` for detailed validation results
+
+### Common Issues
+- **Build failures**: Run `npm run ff -- validate build` to diagnose
+- **Missing repositories**: Check integration plan with `npm run ff -- docs migration`
+- **Package issues**: Use `npm run ff -- validate packages` to verify configurations
 
 ---
 
