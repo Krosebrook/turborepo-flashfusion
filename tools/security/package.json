@@ -1,0 +1,20 @@
+{
+  "name": "@flashfusion/security-tools",
+  "version": "1.0.0",
+  "description": "Security scanning tools for FlashFusion platform",
+  "private": true,
+  "scripts": {
+    "scan:npm": "node npm-audit-scanner.js",
+    "scan:dast": "node zap-dast-scanner.js",
+    "scan:all": "node consolidated-reporter.js",
+    "install:zap": "docker pull ghcr.io/zaproxy/zaproxy:stable"
+  },
+  "keywords": [
+    "security",
+    "vulnerability-scanning",
+    "npm-audit",
+    "dast",
+    "owasp-zap",
+    "codeql"
+  ]
+}

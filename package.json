@@ -12,7 +12,11 @@
     "restore-state": "node restore-session.js",
     "next-steps": "node restore-session.js",
     "deploy": "vercel --prod",
-    "ff": "node tools/cli/ff-cli.js"
+    "ff": "node tools/cli/ff-cli.js",
+    "security:scan": "node tools/security/consolidated-reporter.js",
+    "security:npm": "node tools/security/npm-audit-scanner.js",
+    "security:dast": "node tools/security/zap-dast-scanner.js",
+    "security:install-zap": "docker pull ghcr.io/zaproxy/zaproxy:stable"
   },
   "devDependencies": {
     "turbo": "^2.3.0",

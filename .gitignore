@@ -36,3 +36,6 @@ logs
 # Cache
 .cache/
 .parcel-cache/
+
+# Security reports (contain sensitive vulnerability data)
+security-reports/

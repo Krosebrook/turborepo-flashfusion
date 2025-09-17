@@ -1,0 +1,20 @@
+name: codeql-config
+paths-ignore:
+  - node_modules
+  - '**/*.test.js'
+  - '**/*.spec.js'
+  - dist
+  - build
+  - .turbo
+  - security-reports
+
+paths:
+  - apps
+  - packages
+  - tools
+
+queries:
+  - uses: security-extended
+  - uses: security-and-quality
+
+disable-default-queries: false
