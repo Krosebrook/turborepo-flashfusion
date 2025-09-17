@@ -1,0 +1,30 @@
+{
+  "name": "@flashfusion/static-analyzer",
+  "version": "1.0.0",
+  "description": "Static analysis tool for security and quality scanning",
+  "main": "src/index.js",
+  "bin": {
+    "ff-analyze": "./src/cli.js"
+  },
+  "scripts": {
+    "start": "node src/cli.js",
+    "test": "echo 'Static analyzer tests'",
+    "lint": "echo 'Linting static analyzer'",
+    "build": "echo 'Building static analyzer'",
+    "analyze": "node src/cli.js scan --path ."
+  },
+  "keywords": [
+    "security",
+    "static-analysis",
+    "code-quality",
+    "vulnerability-scanning"
+  ],
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^9.4.1",
+    "glob": "^8.0.3",
+    "semver": "^7.3.8"
+  },
+  "author": "FlashFusion Team",
+  "license": "MIT"
+}

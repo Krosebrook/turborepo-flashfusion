@@ -36,3 +36,14 @@ logs
 # Cache
 .cache/
 .parcel-cache/
+
+# Static analysis reports
+*-analysis-report.*
+*-report.html
+*-report.json
+*-findings.json
+security-*.json
+security-*.html
+quality-*.json
+quality-*.html
+comprehensive-analysis.html
