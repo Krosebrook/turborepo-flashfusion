@@ -282,6 +282,26 @@ VERCEL_ORG_ID=your-vercel-org-id
         }
     },
 
+    'deps:check': () => {
+        log.title('🔍 Running Dependency Update Agent');
+        try {
+            const agentPath = path.join(process.cwd(), 'tools', 'dependency-update-agent.js');
+            exec(`node ${agentPath}`);
+        } catch (error) {
+            log.error('Failed to run dependency update agent');
+        }
+    },
+
+    'deps:update': () => {
+        log.title('🤖 Running Dependency Update Agent (Apply Mode)');
+        try {
+            const agentPath = path.join(process.cwd(), 'tools', 'dependency-update-agent.js');
+            exec(`node ${agentPath} --apply`);
+        } catch (error) {
+            log.error('Failed to run dependency update agent in apply mode');
+        }
+    },
+
     // 🚀 Deployment & Hosting
     'vercel:link': () => {
         log.title('🔗 Linking Vercel Project');
@@ -561,6 +581,8 @@ ${colors.bright}📦 Core Project Setup${colors.reset}
   ff:build                   Compile all apps and packages
   ff:clean                   Remove .next, dist, node_modules
   ff:upgrade                 Check & upgrade all package versions
+  ff:deps:check              Run dependency update agent (scan only)
+  ff:deps:update             Run dependency update agent (apply updates)
 
 ${colors.bright}🔄 Migration & Integration${colors.reset}
   ff migrate [command]       Repository migration commands

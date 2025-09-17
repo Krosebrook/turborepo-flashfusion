@@ -36,3 +36,6 @@ logs
 # Cache
 .cache/
 .parcel-cache/
+
+# Generated files
+dependency-update-report.json
