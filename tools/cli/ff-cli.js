@@ -376,6 +376,62 @@ VERCEL_ORG_ID=your-vercel-org-id
         exec('npx supabase inspect db --role');
     },
 
+    // GitHub Repository Discovery
+    'github:discover': async () => {
+        log.title('🔍 Discovering Krosebrook Repositories');
+        
+        const { createGitHubClient } = require('../../packages/shared/utils/githubApi');
+        
+        // Load environment variables
+        require('dotenv').config();
+        
+        const githubToken = process.env.GITHUB_TOKEN;
+        if (!githubToken) {
+            log.warn('GitHub token not found in .env file. Using unauthenticated requests (limited rate).');
+            log.info('Add GITHUB_TOKEN to .env for better rate limits');
+        }
+        
+        try {
+            const github = createGitHubClient(githubToken);
+            log.info('Fetching repositories...');
+            
+            const result = await github.discoverKrosebrookRepositories();
+            
+            if (result.success) {
+                log.success(`Found ${result.total_repositories} repositories`);
+                
+                // Display summary
+                console.log('\n📊 Repository Summary:');
+                console.log(`   Total repositories: ${result.summary.total_repos}`);
+                console.log(`   Public repositories: ${result.summary.public_repos}`);
+                console.log(`   Private repositories: ${result.summary.private_repos}`);
+                console.log(`   Total stars: ${result.summary.total_stars}`);
+                console.log(`   Total forks: ${result.summary.total_forks}`);
+                console.log(`   Languages: ${result.summary.languages.join(', ')}`);
+                
+                // Save to file
+                const outputFile = `krosebrook-repositories-${new Date().toISOString().slice(0, 10)}.json`;
+                fs.writeFileSync(outputFile, JSON.stringify(result, null, 2));
+                log.success(`Repository data saved to: ${outputFile}`);
+                
+                // Display top repositories
+                console.log('\n🌟 Top Repositories by Stars:');
+                const topRepos = result.repositories
+                    .sort((a, b) => b.stars - a.stars)
+                    .slice(0, 10);
+                
+                topRepos.forEach((repo, index) => {
+                    console.log(`   ${index + 1}. ${repo.repo_name} (${repo.stars} ⭐) - ${repo.primary_language}`);
+                });
+                
+            } else {
+                log.error(`Discovery failed: ${result.error}`);
+            }
+        } catch (error) {
+            log.error(`Discovery error: ${error.message}`);
+        }
+    },
+
     // Show help and version
     'help': () => {
         console.log(`
@@ -409,6 +465,9 @@ ${colors.bright}🔐 Supabase DB + Auth${colors.reset}
   ff:supa:backup             Export DB backup
   ff:supa:restore            Restore from backup
   ff:supa:auth:roles         Show auth roles
+
+${colors.bright}🐙 GitHub Integration${colors.reset}
+  ff:github:discover         Discover all Krosebrook repositories
 
 ${colors.bright}More commands coming soon...${colors.reset}
 Use ${colors.cyan}ff:help:all${colors.reset} to see the complete command list.
