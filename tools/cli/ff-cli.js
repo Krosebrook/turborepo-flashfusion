@@ -432,6 +432,120 @@ VERCEL_ORG_ID=your-vercel-org-id
         }
     },
 
+    // Migration commands
+    'migrate': () => {
+        const subcommand = process.argv[3] || 'help';
+        const { execSync } = require('child_process');
+        
+        switch(subcommand) {
+            case 'help':
+                console.log(`
+${colors.bright}${colors.blue}FlashFusion Migration Commands${colors.reset}
+
+${colors.bright}📦 Repository Migration${colors.reset}
+  ff migrate phase1-ai       Integrate Phase 1 AI & Agent repositories
+  ff migrate phase1-data     Integrate Phase 1 Data & Crawling repositories  
+  ff migrate phase2          Integrate Phase 2 Development Tools
+  ff migrate phase3          Integrate Phase 3 Monitoring & Infrastructure
+  ff migrate phase4          Integrate Phase 4 Memory & Research
+  ff migrate utilities       Integrate utility repositories
+  ff migrate references      Create reference documentation
+  ff migrate config          Update configuration files
+  ff migrate all             Run complete migration
+
+${colors.bright}🔍 Validation Commands${colors.reset}
+  ff validate quick          Quick validation (structure + build + packages)
+  ff validate all            Complete validation
+  ff validate build          Test build system
+  ff validate packages       Validate package configurations
+
+${colors.bright}📋 Documentation${colors.reset}
+  ff docs migration          View migration plan
+  ff docs checklist          View migration checklist
+                `);
+                break;
+            case 'phase1-ai':
+            case 'phase1-data':
+            case 'phase2':
+            case 'phase3':
+            case 'phase4':
+            case 'utilities':
+            case 'references':
+            case 'config':
+            case 'all':
+                try {
+                    log.info(`Starting migration: ${subcommand}`);
+                    execSync(`./tools/migrate-repositories.sh ${subcommand}`, { stdio: 'inherit' });
+                } catch (error) {
+                    log.error(`Migration failed: ${error.message}`);
+                }
+                break;
+            default:
+                log.error(`Unknown migration command: ${subcommand}`);
+                log.info('Use "ff migrate help" for available commands');
+        }
+    },
+
+    // Validation commands
+    'validate': () => {
+        const subcommand = process.argv[3] || 'quick';
+        const { execSync } = require('child_process');
+        
+        try {
+            log.info(`Running validation: ${subcommand}`);
+            execSync(`./tools/validate-migration.sh ${subcommand}`, { stdio: 'inherit' });
+        } catch (error) {
+            log.error(`Validation failed: ${error.message}`);
+        }
+    },
+
+    // Documentation commands
+    'docs': () => {
+        const subcommand = process.argv[3] || 'help';
+        
+        switch(subcommand) {
+            case 'migration':
+                if (fs.existsSync('docs/MONOREPO-INTEGRATION-PLAN.md')) {
+                    const { execSync } = require('child_process');
+                    try {
+                        execSync('cat docs/MONOREPO-INTEGRATION-PLAN.md | head -50', { stdio: 'inherit' });
+                        console.log('\n📖 Full document: docs/MONOREPO-INTEGRATION-PLAN.md');
+                    } catch (error) {
+                        console.log('📖 Migration plan: docs/MONOREPO-INTEGRATION-PLAN.md');
+                    }
+                } else {
+                    log.error('Migration plan not found. Run migration setup first.');
+                }
+                break;
+            case 'checklist':
+                if (fs.existsSync('docs/MIGRATION-CHECKLIST.md')) {
+                    const { execSync } = require('child_process');
+                    try {
+                        execSync('cat docs/MIGRATION-CHECKLIST.md | head -50', { stdio: 'inherit' });
+                        console.log('\n📋 Full checklist: docs/MIGRATION-CHECKLIST.md');
+                    } catch (error) {
+                        console.log('📋 Migration checklist: docs/MIGRATION-CHECKLIST.md');
+                    }
+                } else {
+                    log.error('Migration checklist not found. Run migration setup first.');
+                }
+                break;
+            default:
+                console.log(`
+${colors.bright}${colors.blue}FlashFusion Documentation${colors.reset}
+
+${colors.bright}📚 Available Documentation${colors.reset}
+  ff docs migration          View migration integration plan
+  ff docs checklist          View migration checklist
+
+${colors.bright}📁 Documentation Files${colors.reset}
+  docs/MONOREPO-INTEGRATION-PLAN.md    Complete integration plan
+  docs/MIGRATION-CHECKLIST.md          Step-by-step checklist
+  knowledge-base/                      Additional documentation
+                `);
+        }
+    },
+
     // Show help and version
     'help': () => {
         console.log(`
@@ -447,6 +561,11 @@ ${colors.bright}📦 Core Project Setup${colors.reset}
   ff:build                   Compile all apps and packages
   ff:clean                   Remove .next, dist, node_modules
   ff:upgrade                 Check & upgrade all package versions
+
+${colors.bright}🔄 Migration & Integration${colors.reset}
+  ff migrate [command]       Repository migration commands
+  ff validate [command]      Validation and testing commands
+  ff docs [command]          Documentation commands
 
 ${colors.bright}🚀 Deployment & Hosting${colors.reset}
   ff:vercel:link             Link Vercel project
