@@ -91,6 +91,20 @@ class AgentOrchestrator extends EventEmitter {
                 status: 'idle'
             },
             {
+                id: 'container_publisher',
+                name: 'Container Publish Agent',
+                role: 'DevOps automation for container building and publishing',
+                capabilities: [
+                    'docker_build',
+                    'image_tagging',
+                    'registry_push',
+                    'multi_registry_support',
+                    'build_optimization'
+                ],
+                priority: 6,
+                status: 'idle'
+            },
+            {
                 id: 'coordinator',
                 name: 'Universal Coordinator',
                 role: 'Agent coordination and management',

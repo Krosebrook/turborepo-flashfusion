@@ -7,7 +7,10 @@
     "build": "echo 'No build needed for AI agents'",
     "dev": "echo 'AI agents ready for development'",
     "lint": "echo 'Linting AI agents'",
-    "type-check": "echo 'Type checking AI agents'"
+    "type-check": "echo 'Type checking AI agents'",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.57.0",
@@ -15,6 +18,20 @@
     "openai": "^4.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "core/**/*.js",
+      "workflows/**/*.js",
+      "!**/__tests__/**",
+      "!**/node_modules/**"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.test.js"
+    ]
   }
 }
