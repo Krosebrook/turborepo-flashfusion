@@ -244,11 +244,70 @@ VERCEL_ORG_ID=your-vercel-org-id
         }
     },
 
-    'build': () => {
+    'build': async () => {
         log.title('🏗️  Building All Applications');
         ensureProjectRoot();
-        exec('npm run build');
-        log.success('Build completed!');
+        
+        try {
+            // Use Build & Package Agent for comprehensive build
+            const BuildPackageAgent = require('../build-package-agent.js');
+            const agent = new BuildPackageAgent();
+            const report = await agent.runFullBuild();
+            
+            log.success('Build completed successfully!');
+            log.info(`📊 Build Report: ${report.summary.totalArtifacts} artifacts, ${report.summary.totalSize} bytes`);
+            log.info(`⏱️  Total Build Time: ${report.summary.buildTimeFormatted}`);
+            log.info(`📄 Detailed Report: ${path.relative(process.cwd(), agent.reportFile)}`);
+            log.info(`📋 Build Logs: ${path.relative(process.cwd(), agent.logFile)}`);
+            
+            if (report.deployablePackage) {
+                log.success(`📦 Deployable Package: ${path.relative(process.cwd(), report.deployablePackage.path)}`);
+            }
+        } catch (error) {
+            log.error(`Build failed: ${error.message}`);
+            log.warn('Falling back to basic turborepo build...');
+            exec('npm run build');
+        }
+    },
+
+    'build:agent': async () => {
+        log.title('🤖 Build & Package Agent');
+        ensureProjectRoot();
+        
+        const subcommand = process.argv[3] || 'build';
+        
+        try {
+            await spawnProcess('node', ['tools/build-package-agent.js', subcommand]);
+            log.success('Build agent completed!');
+        } catch (error) {
+            log.error(`Build agent failed: ${error.message}`);
+        }
+    },
+
+    'build:discover': async () => {
+        log.title('🔍 Discovering Build Packages');
+        ensureProjectRoot();
+        
+        const BuildPackageAgent = require('../build-package-agent.js');
+        const agent = new BuildPackageAgent();
+        await agent.discoverPackages();
+    },
+
+    'build:artifacts': async () => {
+        log.title('📦 Collecting Build Artifacts');
+        ensureProjectRoot();
+        
+        const BuildPackageAgent = require('../build-package-agent.js');
+        const agent = new BuildPackageAgent();
+        const packages = await agent.discoverPackages();
+        
+        for (const pkg of packages) {
+            await agent.collectArtifacts(pkg);
+        }
+        
+        const report = await agent.generateBuildReport();
+        log.success(`Found ${report.summary.totalArtifacts} artifacts`);
+        log.info(`📄 Report: ${path.relative(process.cwd(), agent.reportFile)}`);
     },
 
     'clean': () => {
@@ -558,7 +617,10 @@ ${colors.bright}📦 Core Project Setup${colors.reset}
   ff:env                     Generate .env file from template
   ff:env:check               Verify env variable completeness
   ff:dev                     Run all dev services concurrently
-  ff:build                   Compile all apps and packages
+  ff:build                   Compile all apps and packages with Build Agent
+  ff:build:agent             Run Build & Package Agent directly
+  ff:build:discover          Discover packages in monorepo
+  ff:build:artifacts         Collect and analyze build artifacts
   ff:clean                   Remove .next, dist, node_modules
   ff:upgrade                 Check & upgrade all package versions
 

@@ -1,0 +1,145 @@
+name: FlashFusion Build & Package CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-package:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run Build & Package Agent
+      run: node tools/build-package-agent.js build
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifacts-node-${{ matrix.node-version }}
+        path: |
+          .build-artifacts/
+          apps/web/.next/
+          apps/*/dist/
+          packages/*/dist/
+        retention-days: 7
+        
+    - name: Upload build report
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-report-node-${{ matrix.node-version }}
+        path: .build-artifacts/build-report-*.json
+        retention-days: 30
+        
+    - name: Upload deployable package
+      uses: actions/upload-artifact@v3
+      with:
+        name: deployable-package-node-${{ matrix.node-version }}
+        path: .build-artifacts/deployable-*.tar.gz
+        retention-days: 30
+        
+    - name: Comment build results on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          // Find the latest build report
+          const buildDir = '.build-artifacts';
+          const files = fs.readdirSync(buildDir);
+          const reportFile = files.find(f => f.startsWith('build-report-'));
+          
+          if (reportFile) {
+            const report = JSON.parse(fs.readFileSync(path.join(buildDir, reportFile), 'utf8'));
+            
+            const comment = `## 🏗️ Build & Package Report (Node.js ${{ matrix.node-version }})
+            
+**Build ID:** \`${report.buildId}\`
+**Build Time:** ${report.summary.buildTimeFormatted}
+**Total Artifacts:** ${report.summary.totalArtifacts}
+**Total Size:** ${(report.summary.totalSize / (1024 * 1024)).toFixed(2)} MB
+
+### Build Results
+${report.buildResults?.map(r => 
+  `- ${r.package}: ${r.success ? '✅' : '❌'} (${r.buildTime}ms)`
+).join('\n') || 'No build results available'}
+
+### Deployable Package
+${report.deployablePackage ? `📦 Created: \`${path.basename(report.deployablePackage.path)}\` (${(report.deployablePackage.size / (1024 * 1024)).toFixed(2)} MB)` : 'No deployable package created'}
+
+<details>
+<summary>View Build Environment</summary>
+
+- **Node Version:** ${report.environment.nodeVersion}
+- **Platform:** ${report.environment.platform}
+- **CI:** ${report.environment.ci}
+- **Timestamp:** ${report.timestamp}
+
+</details>`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          }
+
+  deploy-staging:
+    needs: build-and-package
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: build-artifacts-node-18.x
+        
+    - name: Deploy to staging
+      run: |
+        echo "🚀 Deploying to staging environment..."
+        # Add your staging deployment commands here
+        # Example: npm run deploy:staging
+        
+  deploy-production:
+    needs: build-and-package
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: build-artifacts-node-18.x
+        
+    - name: Deploy to production
+      run: |
+        echo "🌟 Deploying to production environment..."
+        # Add your production deployment commands here
+        # Example: npm run deploy:production
