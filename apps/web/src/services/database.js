@@ -216,6 +216,31 @@ class DatabaseService {
                     timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
                 );
 
+                CREATE TABLE IF NOT EXISTS documents (
+                    id SERIAL PRIMARY KEY,
+                    document_id VARCHAR(255) UNIQUE NOT NULL,
+                    title VARCHAR(500),
+                    content TEXT NOT NULL,
+                    source_url TEXT,
+                    source_type VARCHAR(100) DEFAULT 'text',
+                    metadata JSONB DEFAULT '{}',
+                    content_hash VARCHAR(64) NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                );
+
+                CREATE TABLE IF NOT EXISTS document_embeddings (
+                    id SERIAL PRIMARY KEY,
+                    document_id VARCHAR(255) NOT NULL REFERENCES documents(document_id) ON DELETE CASCADE,
+                    chunk_index INTEGER NOT NULL DEFAULT 0,
+                    chunk_text TEXT NOT NULL,
+                    embedding_vector REAL[] NOT NULL,
+                    embedding_model VARCHAR(100) NOT NULL DEFAULT 'text-embedding-3-small',
+                    chunk_metadata JSONB DEFAULT '{}',
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                    UNIQUE(document_id, chunk_index)
+                );
+
                 -- Create indexes for better performance
                 CREATE INDEX IF NOT EXISTS idx_agent_logs_agent_id ON agent_logs(agent_id);
                 CREATE INDEX IF NOT EXISTS idx_agent_logs_timestamp ON agent_logs(timestamp);
@@ -224,6 +249,10 @@ class DatabaseService {
                 CREATE INDEX IF NOT EXISTS idx_projects_owner_id ON projects(owner_id);
                 CREATE INDEX IF NOT EXISTS idx_api_usage_user_id ON api_usage(user_id);
                 CREATE INDEX IF NOT EXISTS idx_api_usage_timestamp ON api_usage(timestamp);
+                CREATE INDEX IF NOT EXISTS idx_documents_content_hash ON documents(content_hash);
+                CREATE INDEX IF NOT EXISTS idx_documents_source_type ON documents(source_type);
+                CREATE INDEX IF NOT EXISTS idx_document_embeddings_document_id ON document_embeddings(document_id);
+                CREATE INDEX IF NOT EXISTS idx_document_embeddings_model ON document_embeddings(embedding_model);
             `);
 
             console.log('🔧 PostgreSQL schema initialized successfully');
@@ -523,6 +552,209 @@ class DatabaseService {
             }
 
             return { success: true, data: data[0] };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Vector Database Methods for RAG
+    async storeDocument(documentData) {
+        if (!this.isConnected) {
+            return { success: false, error: 'Database not connected' };
+        }
+
+        try {
+            if (this.dbType === 'supabase') {
+                const { data, error } = await this.supabase
+                    .from('documents')
+                    .upsert([{
+                        ...documentData,
+                        updated_at: new Date().toISOString()
+                    }])
+                    .select();
+
+                if (error) throw error;
+                return { success: true, data: data[0] };
+            } else {
+                const client = await this.pgPool.connect();
+                try {
+                    const result = await client.query(`
+                        INSERT INTO documents (document_id, title, content, source_url, source_type, metadata, content_hash)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7)
+                        ON CONFLICT (document_id) 
+                        DO UPDATE SET 
+                            title = EXCLUDED.title,
+                            content = EXCLUDED.content,
+                            source_url = EXCLUDED.source_url,
+                            source_type = EXCLUDED.source_type,
+                            metadata = EXCLUDED.metadata,
+                            content_hash = EXCLUDED.content_hash,
+                            updated_at = NOW()
+                        RETURNING *
+                    `, [
+                        documentData.document_id,
+                        documentData.title,
+                        documentData.content,
+                        documentData.source_url,
+                        documentData.source_type,
+                        JSON.stringify(documentData.metadata || {}),
+                        documentData.content_hash
+                    ]);
+                    return { success: true, data: result.rows[0] };
+                } finally {
+                    client.release();
+                }
+            }
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    async storeEmbedding(embeddingData) {
+        if (!this.isConnected) {
+            return { success: false, error: 'Database not connected' };
+        }
+
+        try {
+            if (this.dbType === 'supabase') {
+                const { data, error } = await this.supabase
+                    .from('document_embeddings')
+                    .upsert([embeddingData])
+                    .select();
+
+                if (error) throw error;
+                return { success: true, data: data[0] };
+            } else {
+                const client = await this.pgPool.connect();
+                try {
+                    const result = await client.query(`
+                        INSERT INTO document_embeddings (document_id, chunk_index, chunk_text, embedding_vector, embedding_model, chunk_metadata)
+                        VALUES ($1, $2, $3, $4, $5, $6)
+                        ON CONFLICT (document_id, chunk_index)
+                        DO UPDATE SET 
+                            chunk_text = EXCLUDED.chunk_text,
+                            embedding_vector = EXCLUDED.embedding_vector,
+                            embedding_model = EXCLUDED.embedding_model,
+                            chunk_metadata = EXCLUDED.chunk_metadata,
+                            created_at = NOW()
+                        RETURNING *
+                    `, [
+                        embeddingData.document_id,
+                        embeddingData.chunk_index,
+                        embeddingData.chunk_text,
+                        embeddingData.embedding_vector,
+                        embeddingData.embedding_model,
+                        JSON.stringify(embeddingData.chunk_metadata || {})
+                    ]);
+                    return { success: true, data: result.rows[0] };
+                } finally {
+                    client.release();
+                }
+            }
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    async searchSimilarEmbeddings(queryVector, limit = 10, threshold = 0.7) {
+        if (!this.isConnected) {
+            return { success: false, error: 'Database not connected' };
+        }
+
+        try {
+            if (this.dbType === 'postgresql') {
+                const client = await this.pgPool.connect();
+                try {
+                    // Using array operations for similarity search
+                    const result = await client.query(`
+                        SELECT 
+                            de.*,
+                            d.title,
+                            d.source_url,
+                            d.source_type,
+                            d.metadata as document_metadata,
+                            (1 - (de.embedding_vector <-> $1::real[])) as similarity
+                        FROM document_embeddings de
+                        JOIN documents d ON de.document_id = d.document_id
+                        WHERE (1 - (de.embedding_vector <-> $1::real[])) > $2
+                        ORDER BY de.embedding_vector <-> $1::real[]
+                        LIMIT $3
+                    `, [queryVector, threshold, limit]);
+                    
+                    return { success: true, data: result.rows };
+                } finally {
+                    client.release();
+                }
+            } else {
+                // For Supabase, we'll need to implement a basic similarity search
+                // This is a simplified version - in production, you'd use pgvector extension
+                return { success: false, error: 'Vector similarity search requires PostgreSQL with pgvector extension' };
+            }
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    async getDocumentsByType(sourceType, limit = 50) {
+        if (!this.isConnected) {
+            return { success: false, error: 'Database not connected' };
+        }
+
+        try {
+            if (this.dbType === 'supabase') {
+                const { data, error } = await this.supabase
+                    .from('documents')
+                    .select('*')
+                    .eq('source_type', sourceType)
+                    .order('updated_at', { ascending: false })
+                    .limit(limit);
+
+                if (error) throw error;
+                return { success: true, data: data || [] };
+            } else {
+                const client = await this.pgPool.connect();
+                try {
+                    const result = await client.query(
+                        'SELECT * FROM documents WHERE source_type = $1 ORDER BY updated_at DESC LIMIT $2',
+                        [sourceType, limit]
+                    );
+                    return { success: true, data: result.rows };
+                } finally {
+                    client.release();
+                }
+            }
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    async getDocumentEmbeddings(documentId) {
+        if (!this.isConnected) {
+            return { success: false, error: 'Database not connected' };
+        }
+
+        try {
+            if (this.dbType === 'supabase') {
+                const { data, error } = await this.supabase
+                    .from('document_embeddings')
+                    .select('*')
+                    .eq('document_id', documentId)
+                    .order('chunk_index', { ascending: true });
+
+                if (error) throw error;
+                return { success: true, data: data || [] };
+            } else {
+                const client = await this.pgPool.connect();
+                try {
+                    const result = await client.query(
+                        'SELECT * FROM document_embeddings WHERE document_id = $1 ORDER BY chunk_index ASC',
+                        [documentId]
+                    );
+                    return { success: true, data: result.rows };
+                } finally {
+                    client.release();
+                }
+            }
         } catch (error) {
             return { success: false, error: error.message };
         }

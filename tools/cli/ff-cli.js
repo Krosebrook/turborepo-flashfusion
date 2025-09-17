@@ -432,6 +432,202 @@ VERCEL_ORG_ID=your-vercel-org-id
         }
     },
 
+    // RAG Index Agent Commands
+    'rag:process': async (documentPath) => {
+        log.title('🤖 Processing Document with RAG Index Agent');
+        
+        if (!documentPath) {
+            log.error('Please provide a document path or URL');
+            log.info('Usage: ff rag:process <file-path-or-url>');
+            return;
+        }
+
+        try {
+            require('dotenv').config();
+            const fs = require('fs');
+            const path = require('path');
+            const databaseService = require('../../apps/web/src/services/database');
+            const RagIndexAgent = require('../../packages/ai-agents/core/RagIndexAgent');
+
+            // Initialize database
+            await databaseService.initialize();
+            const ragAgent = new RagIndexAgent(databaseService);
+
+            let content, title, sourceUrl, sourceType;
+
+            // Determine if it's a file or URL
+            if (documentPath.startsWith('http')) {
+                log.info('📥 Fetching content from URL...');
+                // For URLs, we'd normally use a web scraper like firecrawl
+                // For now, we'll use a placeholder
+                sourceUrl = documentPath;
+                sourceType = 'web';
+                title = 'Web Document';
+                content = 'Sample content from URL. In production, this would be scraped using firecrawl.';
+            } else {
+                log.info('📄 Reading file...');
+                const fullPath = path.resolve(documentPath);
+                if (!fs.existsSync(fullPath)) {
+                    throw new Error(`File not found: ${fullPath}`);
+                }
+                
+                content = fs.readFileSync(fullPath, 'utf8');
+                title = path.basename(fullPath);
+                sourceUrl = fullPath;
+                sourceType = 'file';
+            }
+
+            log.info(`📝 Processing document: ${title}`);
+            log.info(`📊 Content length: ${content.length} characters`);
+
+            // Process the document
+            const result = await ragAgent.processDocument({
+                content,
+                title,
+                source_url: sourceUrl,
+                source_type: sourceType,
+                metadata: {
+                    processed_at: new Date().toISOString(),
+                    cli_version: '1.0.0'
+                }
+            });
+
+            if (result.success) {
+                log.success('✅ Document processed successfully!');
+                log.info(`📍 Embeddings location: ${result.embeddings_location}`);
+                log.info(`📊 New records created: ${result.new_records}`);
+                log.info(`📄 Chunks processed: ${result.chunks_processed}`);
+                
+                const stats = result.stats;
+                log.info('📈 Agent Statistics:');
+                log.info(`  • Documents processed: ${stats.documentsProcessed}`);
+                log.info(`  • Embeddings created: ${stats.embeddingsCreated}`);
+                log.info(`  • Model used: ${stats.embedding_model}`);
+            } else {
+                log.error('❌ Document processing failed:');
+                log.error(result.error);
+            }
+
+        } catch (error) {
+            log.error('❌ RAG processing failed:', error.message);
+        }
+    },
+
+    'rag:search': async (query) => {
+        log.title('🔍 Searching Vector Database');
+        
+        if (!query) {
+            log.error('Please provide a search query');
+            log.info('Usage: ff rag:search "your search query"');
+            return;
+        }
+
+        try {
+            require('dotenv').config();
+            const databaseService = require('../../apps/web/src/services/database');
+            const RagIndexAgent = require('../../packages/ai-agents/core/RagIndexAgent');
+
+            // Initialize database
+            await databaseService.initialize();
+            const ragAgent = new RagIndexAgent(databaseService);
+
+            log.info(`🔍 Searching for: "${query}"`);
+
+            const result = await ragAgent.searchSimilar(query, {
+                limit: 5,
+                threshold: 0.5
+            });
+
+            if (result.success && result.count > 0) {
+                log.success(`✅ Found ${result.count} similar results:`);
+                
+                result.results.forEach((item, index) => {
+                    log.info(`\n${index + 1}. ${item.title || 'Untitled'}`);
+                    log.info(`   📊 Similarity: ${(item.similarity * 100).toFixed(1)}%`);
+                    log.info(`   📝 Content: ${item.chunk_text.substring(0, 100)}...`);
+                    log.info(`   🔗 Source: ${item.source_url}`);
+                });
+            } else {
+                log.warn('🔍 No similar results found');
+                if (result.error) {
+                    log.error('Error:', result.error);
+                }
+            }
+
+        } catch (error) {
+            log.error('❌ Search failed:', error.message);
+        }
+    },
+
+    'rag:refresh': async () => {
+        log.title('🔄 Refreshing RAG Index');
+        
+        try {
+            require('dotenv').config();
+            const databaseService = require('../../apps/web/src/services/database');
+            const RagIndexAgent = require('../../packages/ai-agents/core/RagIndexAgent');
+
+            // Initialize database
+            await databaseService.initialize();
+            const ragAgent = new RagIndexAgent(databaseService);
+
+            log.info('🔄 Checking and refreshing embeddings...');
+
+            const result = await ragAgent.refreshEmbeddings();
+
+            if (result.success) {
+                log.success('✅ Refresh completed!');
+                log.info(`📄 Documents checked: ${result.documents_checked}`);
+                log.info(`🔄 Documents refreshed: ${result.documents_refreshed}`);
+                
+                const stats = result.stats;
+                log.info('📈 Current Statistics:');
+                log.info(`  • Total documents processed: ${stats.documentsProcessed}`);
+                log.info(`  • Total embeddings created: ${stats.embeddingsCreated}`);
+                log.info(`  • Last processed: ${stats.lastProcessedAt}`);
+            } else {
+                log.error('❌ Refresh failed:', result.error);
+            }
+
+        } catch (error) {
+            log.error('❌ Refresh failed:', error.message);
+        }
+    },
+
+    'rag:stats': async () => {
+        log.title('📊 RAG Index Statistics');
+        
+        try {
+            require('dotenv').config();
+            const databaseService = require('../../apps/web/src/services/database');
+
+            // Initialize database
+            await databaseService.initialize();
+
+            // Get document counts
+            const documentsResult = await databaseService.getDocumentsByType('file', 1000);
+            const webDocsResult = await databaseService.getDocumentsByType('web', 1000);
+
+            if (documentsResult.success || webDocsResult.success) {
+                const fileCount = documentsResult.success ? documentsResult.data.length : 0;
+                const webCount = webDocsResult.success ? webDocsResult.data.length : 0;
+                const totalDocs = fileCount + webCount;
+
+                log.success('📊 Vector Database Statistics:');
+                log.info(`  • File documents: ${fileCount}`);
+                log.info(`  • Web documents: ${webCount}`);
+                log.info(`  • Total documents: ${totalDocs}`);
+                log.info(`  • Database type: ${databaseService.dbType}`);
+                log.info(`  • Connection status: ${databaseService.isConnected ? '✅ Connected' : '❌ Disconnected'}`);
+            } else {
+                log.warn('⚠️ Unable to retrieve statistics');
+            }
+
+        } catch (error) {
+            log.error('❌ Failed to get statistics:', error.message);
+        }
+    },
+
     // Migration commands
     'migrate': () => {
         const subcommand = process.argv[3] || 'help';
@@ -587,6 +783,12 @@ ${colors.bright}🔐 Supabase DB + Auth${colors.reset}
 
 ${colors.bright}🐙 GitHub Integration${colors.reset}
   ff:github:discover         Discover all Krosebrook repositories
+
+${colors.bright}🤖 RAG Index Agent${colors.reset}
+  ff:rag:process <path>      Process document and create embeddings
+  ff:rag:search "query"      Search vector database for similar content
+  ff:rag:refresh             Refresh embeddings for all documents
+  ff:rag:stats               Show vector database statistics
 
 ${colors.bright}More commands coming soon...${colors.reset}
 Use ${colors.cyan}ff:help:all${colors.reset} to see the complete command list.
