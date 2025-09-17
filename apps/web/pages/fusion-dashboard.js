@@ -1,8 +1,22 @@
 import { useState, useRef, useEffect } from 'react';
-import { 
-  Sparkles, Paperclip, Zap, Users, Settings, BarChart3, 
-  Play, FolderOpen, Monitor, Smartphone, Code, Terminal,
-  GitBranch, Cloud, Activity, AlertCircle, CheckCircle
+import {
+  Sparkles,
+  Paperclip,
+  Zap,
+  Users,
+  Settings,
+  BarChart3,
+  Play,
+  FolderOpen,
+  Monitor,
+  Smartphone,
+  Code,
+  Terminal,
+  GitBranch,
+  Cloud,
+  Activity,
+  AlertCircle,
+  CheckCircle,
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -44,7 +58,7 @@ export default App;`);
   const [files, setFiles] = useState({
     'app.js': {
       content: editorValue,
-      language: 'javascript'
+      language: 'javascript',
     },
     'components.js': {
       content: `// FlashFusion Components
@@ -65,7 +79,7 @@ export const Card = ({ title, children }) => (
     {children}
   </div>
 );`,
-      language: 'javascript'
+      language: 'javascript',
     },
     'styles.css': {
       content: `/* FlashFusion Styles */
@@ -96,131 +110,157 @@ button {
 button:hover {
   transform: translateY(-2px);
 }`,
-      language: 'css'
-    }
+      language: 'css',
+    },
   });
 
   const templates = [
-    { name: 'Business App', desc: 'Full-stack business automation', icon: '🏢' },
+    {
+      name: 'Business App',
+      desc: 'Full-stack business automation',
+      icon: '🏢',
+    },
     { name: 'E-commerce', desc: 'Online store with payments', icon: '🛒' },
     { name: 'SaaS Platform', desc: 'Subscription-based service', icon: '💼' },
     { name: 'AI Assistant', desc: 'Custom AI-powered chatbot', icon: '🤖' },
-    { name: 'Analytics Dashboard', desc: 'Data visualization platform', icon: '📊' },
-    { name: 'Next.js App', desc: 'Modern React application', icon: '⚛️' }
+    {
+      name: 'Analytics Dashboard',
+      desc: 'Data visualization platform',
+      icon: '📊',
+    },
+    { name: 'Next.js App', desc: 'Modern React application', icon: '⚛️' },
   ];
 
   const models = [
     'Claude Sonnet 4',
-    'GPT-4 Turbo', 
+    'GPT-4 Turbo',
     'Gemini Pro',
-    'Multi-Agent Orchestration'
+    'Multi-Agent Orchestration',
   ];
 
   const projects = [
-    { 
-      id: 1, 
-      name: 'E-commerce Platform', 
-      status: 'Active', 
-      agents: 5, 
+    {
+      id: 1,
+      name: 'E-commerce Platform',
+      status: 'Active',
+      agents: 5,
       lastUpdate: '2 min ago',
       preview: '/api/placeholder/preview1',
-      framework: 'Next.js'
+      framework: 'Next.js',
     },
-    { 
-      id: 2, 
-      name: 'Customer Support AI', 
-      status: 'Building', 
-      agents: 3, 
+    {
+      id: 2,
+      name: 'Customer Support AI',
+      status: 'Building',
+      agents: 3,
       lastUpdate: '5 min ago',
       preview: '/api/placeholder/preview2',
-      framework: 'React'
+      framework: 'React',
     },
-    { 
-      id: 3, 
-      name: 'Analytics Dashboard', 
-      status: 'Deployed', 
-      agents: 4, 
+    {
+      id: 3,
+      name: 'Analytics Dashboard',
+      status: 'Deployed',
+      agents: 4,
       lastUpdate: '1 hour ago',
       preview: '/api/placeholder/preview3',
-      framework: 'Vue.js'
-    }
+      framework: 'Vue.js',
+    },
   ];
 
   const handlePromptSubmit = async () => {
     if (!promptInput.trim() || isGenerating) return;
-    
+
     setIsGenerating(true);
     setProjectStatus('generating');
-    
+
     // Add user message to chat
-    setChatMessages(prev => [...prev, {
-      type: 'user',
-      content: promptInput,
-      timestamp: new Date()
-    }]);
+    setChatMessages(prev => [
+      ...prev,
+      {
+        type: 'user',
+        content: promptInput,
+        timestamp: new Date(),
+      },
+    ]);
 
     toast.loading('Creating project...', { id: 'project-creation' });
 
     // Simulate AI response
     setTimeout(() => {
-      setChatMessages(prev => [...prev, {
-        type: 'assistant',
-        content: `🚀 Creating your ${selectedTemplate} with ${selectedModel}! Setting up project structure and deploying agents...`,
-        timestamp: new Date()
-      }]);
+      setChatMessages(prev => [
+        ...prev,
+        {
+          type: 'assistant',
+          content: `🚀 Creating your ${selectedTemplate} with ${selectedModel}! Setting up project structure and deploying agents...`,
+          timestamp: new Date(),
+        },
+      ]);
       setProjectStatus('building');
       setIsGenerating(false);
       setActiveTab('editor');
-      toast.success('Project created successfully!', { id: 'project-creation' });
+      toast.success('Project created successfully!', {
+        id: 'project-creation',
+      });
     }, 2000);
   };
 
   // File operations
-  const handleFileSelect = (fileName) => {
+  const handleFileSelect = fileName => {
     setCurrentFile(fileName);
     setEditorValue(files[fileName].content);
   };
 
-  const handleEditorChange = (value) => {
+  const handleEditorChange = value => {
     setEditorValue(value || '');
     setFiles(prev => ({
       ...prev,
       [currentFile]: {
         ...prev[currentFile],
-        content: value || ''
-      }
+        content: value || '',
+      },
     }));
   };
 
   const handleRunCode = () => {
     toast.success('Code executed successfully!');
-    setChatMessages(prev => [...prev, {
-      type: 'assistant',
-      content: '✅ Code compiled and running on preview server',
-      timestamp: new Date()
-    }]);
+    setChatMessages(prev => [
+      ...prev,
+      {
+        type: 'assistant',
+        content: '✅ Code compiled and running on preview server',
+        timestamp: new Date(),
+      },
+    ]);
   };
 
-  const handleSendChat = (message) => {
+  const handleSendChat = message => {
     if (!message.trim()) return;
-    
-    setChatMessages(prev => [...prev, {
-      type: 'user',
-      content: message,
-      timestamp: new Date()
-    }]);
+
+    setChatMessages(prev => [
+      ...prev,
+      {
+        type: 'user',
+        content: message,
+        timestamp: new Date(),
+      },
+    ]);
 
     // Simulate AI response
     setTimeout(() => {
-      setChatMessages(prev => [...prev, {
-        type: 'assistant',
-        content: 'I can help you with that! Let me analyze your code and suggest improvements...',
-        timestamp: new Date()
-      }]);
+      setChatMessages(prev => [
+        ...prev,
+        {
+          type: 'assistant',
+          content:
+            'I can help you with that! Let me analyze your code and suggest improvements...',
+          timestamp: new Date(),
+        },
+      ]);
     }, 1000);
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = e => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handlePromptSubmit();
@@ -228,14 +268,22 @@ button:hover {
   };
 
   const StatusIndicator = ({ status }) => (
-    <div className={`flex items-center gap-2 text-sm ${
-      status === 'Active' ? 'text-green-400' :
-      status === 'Building' ? 'text-yellow-400' :
-      'text-blue-400'
-    }`}>
-      {status === 'Active' ? <CheckCircle className="w-4 h-4" /> :
-       status === 'Building' ? <AlertCircle className="w-4 h-4 animate-pulse" /> :
-       <CheckCircle className="w-4 h-4" />}
+    <div
+      className={`flex items-center gap-2 text-sm ${
+        status === 'Active'
+          ? 'text-green-400'
+          : status === 'Building'
+            ? 'text-yellow-400'
+            : 'text-blue-400'
+      }`}
+    >
+      {status === 'Active' ? (
+        <CheckCircle className="w-4 h-4" />
+      ) : status === 'Building' ? (
+        <AlertCircle className="w-4 h-4 animate-pulse" />
+      ) : (
+        <CheckCircle className="w-4 h-4" />
+      )}
       {status}
     </div>
   );
@@ -245,7 +293,7 @@ button:hover {
       {/* Background Effects */}
       <div className="fixed inset-0 bg-gradient-to-br from-purple-900/20 via-black to-blue-900/20" />
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-black to-transparent" />
-      
+
       {/* Main Container */}
       <div className="relative z-10 flex flex-col h-screen">
         {/* Header */}
@@ -257,20 +305,20 @@ button:hover {
             <h1 className="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
               FlashFusion December
             </h1>
-            
+
             {/* Tab Navigation */}
             <nav className="flex items-center gap-2 ml-8">
               {[
                 { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
                 { id: 'editor', label: 'Editor', icon: Code },
-                { id: 'preview', label: 'Preview', icon: Monitor }
+                { id: 'preview', label: 'Preview', icon: Monitor },
               ].map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                    activeTab === tab.id 
-                      ? 'bg-white/20 text-white' 
+                    activeTab === tab.id
+                      ? 'bg-white/20 text-white'
                       : 'text-gray-400 hover:text-white hover:bg-white/10'
                   }`}
                 >
@@ -280,7 +328,7 @@ button:hover {
               ))}
             </nav>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <StatusIndicator status={projectStatus} />
             <button className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg transition-all">
@@ -301,7 +349,9 @@ button:hover {
                     What do you want to build?
                   </h1>
                   <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-                    Create full-stack applications from simple prompts. FlashFusion's AI agents work together to build, deploy, and manage your projects.
+                    Create full-stack applications from simple prompts.
+                    FlashFusion's AI agents work together to build, deploy, and
+                    manage your projects.
                   </p>
                 </div>
 
@@ -311,18 +361,18 @@ button:hover {
                     <div className="p-4">
                       <textarea
                         value={promptInput}
-                        onChange={(e) => setPromptInput(e.target.value)}
+                        onChange={e => setPromptInput(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder="Build a full-stack e-commerce platform with user authentication, product catalog, shopping cart, and Stripe payments..."
                         className="w-full bg-transparent text-white placeholder-gray-400 resize-none outline-none"
                         style={{
                           minHeight: '80px',
                           maxHeight: '200px',
-                          height: 'auto'
+                          height: 'auto',
                         }}
                         disabled={isGenerating}
                       />
-                      
+
                       {/* Controls */}
                       <div className="flex items-center justify-between mt-4">
                         <div className="flex items-center gap-3">
@@ -337,14 +387,23 @@ button:hover {
                             >
                               <Sparkles className="w-4 h-4 text-purple-400" />
                               <span>{selectedTemplate}</span>
-                              <svg width="12" height="12" viewBox="0 0 16 16" className={`transition-transform ${showTemplateDropdown ? 'rotate-180' : ''}`}>
-                                <path fillRule="evenodd" d="M12.0607 6.74999L8.7071 10.1035C8.31657 10.4941 7.68341 10.4941 7.29288 10.1035L4.46966 7.28032L3.93933 6.74999L4.99999 5.68933L7.99999 8.68933L11 5.68933L12.0607 6.74999Z" fill="currentColor"/>
+                              <svg
+                                width="12"
+                                height="12"
+                                viewBox="0 0 16 16"
+                                className={`transition-transform ${showTemplateDropdown ? 'rotate-180' : ''}`}
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M12.0607 6.74999L8.7071 10.1035C8.31657 10.4941 7.68341 10.4941 7.29288 10.1035L4.46966 7.28032L3.93933 6.74999L4.99999 5.68933L7.99999 8.68933L11 5.68933L12.0607 6.74999Z"
+                                  fill="currentColor"
+                                />
                               </svg>
                             </button>
-                            
+
                             {showTemplateDropdown && (
                               <div className="absolute top-full left-0 mt-2 w-72 bg-gray-900/90 backdrop-blur-xl border border-gray-600/30 rounded-lg shadow-xl z-50">
-                                {templates.map((template) => (
+                                {templates.map(template => (
                                   <button
                                     key={template.name}
                                     onClick={() => {
@@ -353,10 +412,16 @@ button:hover {
                                     }}
                                     className="w-full text-left p-4 text-sm text-gray-300 hover:text-white hover:bg-white/10 first:rounded-t-lg last:rounded-b-lg transition-all flex items-center gap-3"
                                   >
-                                    <span className="text-lg">{template.icon}</span>
+                                    <span className="text-lg">
+                                      {template.icon}
+                                    </span>
                                     <div>
-                                      <div className="font-medium">{template.name}</div>
-                                      <div className="text-xs text-gray-500">{template.desc}</div>
+                                      <div className="font-medium">
+                                        {template.name}
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        {template.desc}
+                                      </div>
                                     </div>
                                   </button>
                                 ))}
@@ -374,14 +439,23 @@ button:hover {
                               className="flex items-center gap-2 px-3 py-2 bg-gray-800/40 hover:bg-gray-700/40 border border-gray-600/30 rounded-lg text-sm text-gray-300 hover:text-white transition-all backdrop-blur-sm"
                             >
                               <span>{selectedModel}</span>
-                              <svg width="12" height="12" viewBox="0 0 16 16" className={`transition-transform ${showModelDropdown ? 'rotate-180' : ''}`}>
-                                <path fillRule="evenodd" d="M12.0607 6.74999L8.7071 10.1035C8.31657 10.4941 7.68341 10.4941 7.29288 10.1035L4.46966 7.28032L3.93933 6.74999L4.99999 5.68933L7.99999 8.68933L11 5.68933L12.0607 6.74999Z" fill="currentColor"/>
+                              <svg
+                                width="12"
+                                height="12"
+                                viewBox="0 0 16 16"
+                                className={`transition-transform ${showModelDropdown ? 'rotate-180' : ''}`}
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M12.0607 6.74999L8.7071 10.1035C8.31657 10.4941 7.68341 10.4941 7.29288 10.1035L4.46966 7.28032L3.93933 6.74999L4.99999 5.68933L7.99999 8.68933L11 5.68933L12.0607 6.74999Z"
+                                  fill="currentColor"
+                                />
                               </svg>
                             </button>
-                            
+
                             {showModelDropdown && (
                               <div className="absolute top-full left-0 mt-2 w-48 bg-gray-900/90 backdrop-blur-xl border border-gray-600/30 rounded-lg shadow-xl z-50">
-                                {models.map((model) => (
+                                {models.map(model => (
                                   <button
                                     key={model}
                                     onClick={() => {
@@ -414,7 +488,12 @@ button:hover {
                             {isGenerating ? (
                               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             ) : (
-                              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 16 16"
+                                fill="currentColor"
+                              >
                                 <path d="M8.70711 1.39644C8.31659 1.00592 7.68342 1.00592 7.2929 1.39644L2.21968 6.46966L1.68935 6.99999L2.75001 8.06065L3.28034 7.53032L7.25001 3.56065V14.25V15H8.75001V14.25V3.56065L12.7197 7.53032L13.25 8.06065L14.3107 6.99999L13.7803 6.46966L8.70711 1.39644Z" />
                               </svg>
                             )}
@@ -430,8 +509,12 @@ button:hover {
               <div className="max-w-6xl mx-auto">
                 <div className="flex items-center justify-between mb-8">
                   <div>
-                    <h2 className="text-3xl font-bold text-white mb-2">Your Projects</h2>
-                    <p className="text-gray-400">Manage and monitor your AI-generated applications</p>
+                    <h2 className="text-3xl font-bold text-white mb-2">
+                      Your Projects
+                    </h2>
+                    <p className="text-gray-400">
+                      Manage and monitor your AI-generated applications
+                    </p>
                   </div>
                   <button className="px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-lg transition-all shadow-lg hover:shadow-xl">
                     New Project
@@ -439,33 +522,40 @@ button:hover {
                 </div>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {projects.map((project) => (
+                  {projects.map(project => (
                     <div key={project.id} className="group cursor-pointer">
                       <div className="h-full bg-gray-900/20 border border-gray-700/30 rounded-xl backdrop-blur-sm hover:bg-gray-800/30 hover:border-gray-600/50 transition-all duration-300 overflow-hidden">
                         {/* Project Preview */}
                         <div className="h-32 bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-b border-gray-700/30 flex items-center justify-center">
                           <Monitor className="w-8 h-8 text-gray-400" />
                         </div>
-                        
+
                         {/* Project Info */}
                         <div className="p-6">
                           <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-white">{project.name}</h3>
+                            <h3 className="text-lg font-semibold text-white">
+                              {project.name}
+                            </h3>
                             <StatusIndicator status={project.status} />
                           </div>
-                          
+
                           <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
                             <span>{project.framework}</span>
                             <span>{project.lastUpdate}</span>
                           </div>
-                          
+
                           <div className="flex items-center gap-2">
                             <div className="flex -space-x-2">
                               {[...Array(project.agents)].map((_, i) => (
-                                <div key={i} className="w-6 h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full border-2 border-gray-900" />
+                                <div
+                                  key={i}
+                                  className="w-6 h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full border-2 border-gray-900"
+                                />
                               ))}
                             </div>
-                            <span className="text-xs text-gray-500 ml-2">{project.agents} agents</span>
+                            <span className="text-xs text-gray-500 ml-2">
+                              {project.agents} agents
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -482,19 +572,21 @@ button:hover {
               {/* Left Sidebar - File Tree */}
               <div className="w-64 bg-gray-900/20 border-r border-gray-700/30 backdrop-blur-sm">
                 <div className="p-4 border-b border-gray-700/30">
-                  <h3 className="text-sm font-semibold text-white mb-3">Project Files</h3>
+                  <h3 className="text-sm font-semibold text-white mb-3">
+                    Project Files
+                  </h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2 text-gray-300 hover:text-white cursor-pointer">
                       <FolderOpen className="w-4 h-4" />
                       <span>src/</span>
                     </div>
-                    {Object.keys(files).map((fileName) => (
-                      <div 
+                    {Object.keys(files).map(fileName => (
+                      <div
                         key={fileName}
                         onClick={() => handleFileSelect(fileName)}
                         className={`flex items-center gap-2 cursor-pointer ml-4 p-1 rounded transition-all ${
-                          currentFile === fileName 
-                            ? 'text-white bg-purple-500/20' 
+                          currentFile === fileName
+                            ? 'text-white bg-purple-500/20'
                             : 'text-gray-300 hover:text-white hover:bg-white/10'
                         }`}
                       >
@@ -504,10 +596,12 @@ button:hover {
                     ))}
                   </div>
                 </div>
-                
+
                 {/* Agent Status */}
                 <div className="p-4">
-                  <h3 className="text-sm font-semibold text-white mb-3">Active Agents</h3>
+                  <h3 className="text-sm font-semibold text-white mb-3">
+                    Active Agents
+                  </h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
@@ -529,7 +623,7 @@ button:hover {
               <div className="flex-1 flex flex-col">
                 {/* File Tabs */}
                 <div className="flex items-center gap-2 p-2 bg-gray-900/20 border-b border-gray-700/30">
-                  {Object.keys(files).map((fileName) => (
+                  {Object.keys(files).map(fileName => (
                     <button
                       key={fileName}
                       onClick={() => handleFileSelect(fileName)}
@@ -542,7 +636,7 @@ button:hover {
                       {fileName}
                     </button>
                   ))}
-                  <button 
+                  <button
                     onClick={handleRunCode}
                     className="ml-auto px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-lg transition-all text-sm flex items-center gap-2"
                   >
@@ -569,8 +663,8 @@ button:hover {
                       tabSize: 2,
                       bracketPairColorization: true,
                       guides: {
-                        bracketPairs: true
-                      }
+                        bracketPairs: true,
+                      },
                     }}
                     onMount={(editor, monaco) => {
                       editorRef.current = editor;
@@ -579,15 +673,19 @@ button:hover {
                         base: 'vs-dark',
                         inherit: true,
                         rules: [
-                          { token: 'comment', foreground: '6a9955', fontStyle: 'italic' },
+                          {
+                            token: 'comment',
+                            foreground: '6a9955',
+                            fontStyle: 'italic',
+                          },
                           { token: 'keyword', foreground: '569cd6' },
                           { token: 'string', foreground: 'ce9178' },
-                          { token: 'number', foreground: 'b5cea8' }
+                          { token: 'number', foreground: 'b5cea8' },
                         ],
                         colors: {
                           'editor.background': '#0f0f0f',
-                          'editor.foreground': '#d4d4d4'
-                        }
+                          'editor.foreground': '#d4d4d4',
+                        },
                       });
                       monaco.editor.setTheme('fusion-dark');
                     }}
@@ -601,7 +699,9 @@ button:hover {
                     <span className="text-gray-400">Terminal</span>
                   </div>
                   <div className="text-green-400">$ npm run dev</div>
-                  <div className="text-gray-300">✓ Ready on http://localhost:3000</div>
+                  <div className="text-gray-300">
+                    ✓ Ready on http://localhost:3000
+                  </div>
                   <div className="text-blue-400">⚡ Building...</div>
                 </div>
               </div>
@@ -609,18 +709,25 @@ button:hover {
               {/* Right Panel - Chat */}
               <div className="w-80 bg-gray-900/20 border-l border-gray-700/30 backdrop-blur-sm flex flex-col">
                 <div className="p-4 border-b border-gray-700/30">
-                  <h3 className="text-sm font-semibold text-white">AI Assistant</h3>
+                  <h3 className="text-sm font-semibold text-white">
+                    AI Assistant
+                  </h3>
                 </div>
-                
+
                 <div className="flex-1 p-4 overflow-auto">
                   <div className="space-y-4">
                     {chatMessages.map((message, index) => (
-                      <div key={index} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-xs p-3 rounded-lg text-sm ${
-                          message.type === 'user' 
-                            ? 'bg-blue-500 text-white' 
-                            : 'bg-gray-800 text-gray-200'
-                        }`}>
+                      <div
+                        key={index}
+                        className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-xs p-3 rounded-lg text-sm ${
+                            message.type === 'user'
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-gray-800 text-gray-200'
+                          }`}
+                        >
                           {message.content}
                         </div>
                       </div>
@@ -641,12 +748,16 @@ button:hover {
               {/* Preview Controls */}
               <div className="flex items-center justify-between p-4 bg-gray-900/20 border-b border-gray-700/30">
                 <div className="flex items-center gap-4">
-                  <h3 className="text-sm font-semibold text-white">Live Preview</h3>
+                  <h3 className="text-sm font-semibold text-white">
+                    Live Preview
+                  </h3>
                   <div className="flex items-center gap-2 bg-gray-800/40 rounded-lg p-1">
                     <button
                       onClick={() => setPreviewDevice('desktop')}
                       className={`p-2 rounded transition-all ${
-                        previewDevice === 'desktop' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'
+                        previewDevice === 'desktop'
+                          ? 'bg-white/20 text-white'
+                          : 'text-gray-400 hover:text-white'
                       }`}
                     >
                       <Monitor className="w-4 h-4" />
@@ -654,14 +765,16 @@ button:hover {
                     <button
                       onClick={() => setPreviewDevice('mobile')}
                       className={`p-2 rounded transition-all ${
-                        previewDevice === 'mobile' ? 'bg-white/20 text-white' : 'text-gray-400 hover:text-white'
+                        previewDevice === 'mobile'
+                          ? 'bg-white/20 text-white'
+                          : 'text-gray-400 hover:text-white'
                       }`}
                     >
                       <Smartphone className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <button className="px-4 py-2 bg-gray-800/40 hover:bg-gray-700/40 border border-gray-600/30 rounded-lg text-sm text-gray-300 hover:text-white transition-all">
                     Refresh
@@ -674,16 +787,24 @@ button:hover {
 
               {/* Preview Frame */}
               <div className="flex-1 p-6 bg-gray-900/10">
-                <div className={`mx-auto bg-white rounded-lg shadow-2xl overflow-hidden transition-all duration-300 ${
-                  previewDevice === 'mobile' ? 'w-80 h-[600px]' : 'w-full h-full'
-                }`}>
+                <div
+                  className={`mx-auto bg-white rounded-lg shadow-2xl overflow-hidden transition-all duration-300 ${
+                    previewDevice === 'mobile'
+                      ? 'w-80 h-[600px]'
+                      : 'w-full h-full'
+                  }`}
+                >
                   <div className="h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
                     <div className="text-center">
                       <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg mx-auto mb-4 flex items-center justify-center">
                         <Zap className="w-8 h-8 text-white" />
                       </div>
-                      <h3 className="text-xl font-bold text-gray-800 mb-2">Your App Preview</h3>
-                      <p className="text-gray-600">Live preview will appear here as you build</p>
+                      <h3 className="text-xl font-bold text-gray-800 mb-2">
+                        Your App Preview
+                      </h3>
+                      <p className="text-gray-600">
+                        Live preview will appear here as you build
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -694,17 +815,17 @@ button:hover {
 
         {/* Dropdown Overlay */}
         {(showTemplateDropdown || showModelDropdown) && (
-          <div 
-            className="fixed inset-0 z-40" 
+          <div
+            className="fixed inset-0 z-40"
             onClick={() => {
               setShowTemplateDropdown(false);
               setShowModelDropdown(false);
-            }} 
+            }}
           />
         )}
       </div>
 
-      <Toaster 
+      <Toaster
         position="top-right"
         toastOptions={{
           style: {
@@ -722,7 +843,7 @@ button:hover {
 const ChatInput = ({ onSend }) => {
   const [message, setMessage] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = e => {
     e.preventDefault();
     if (message.trim()) {
       onSend(message);
@@ -735,11 +856,11 @@ const ChatInput = ({ onSend }) => {
       <input
         type="text"
         value={message}
-        onChange={(e) => setMessage(e.target.value)}
+        onChange={e => setMessage(e.target.value)}
         placeholder="Ask AI for help..."
         className="flex-1 px-3 py-2 bg-gray-800/40 border border-gray-600/30 rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:border-purple-500/60"
       />
-      <button 
+      <button
         type="submit"
         className="px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-all"
       >

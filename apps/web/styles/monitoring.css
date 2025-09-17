@@ -300,15 +300,15 @@
   .metric-value {
     font-size: 2rem;
   }
-  
+
   .chart-container {
     padding: 16px;
   }
-  
+
   .service-card {
     padding: 12px;
   }
-  
+
   .alert-item {
     padding: 12px;
   }
@@ -318,7 +318,7 @@
   .metric-value {
     font-size: 1.75rem;
   }
-  
+
   .monitoring-dashboard {
     padding: 12px;
   }
@@ -326,7 +326,8 @@
 
 /* Animations */
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -359,26 +360,29 @@
   .monitoring-dashboard {
     background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
   }
-  
-  .metric-card, .service-card, .alert-item, .chart-container {
+
+  .metric-card,
+  .service-card,
+  .alert-item,
+  .chart-container {
     background: #374151;
     border-color: #4b5563;
     color: #f9fafb;
   }
-  
+
   .metric-card.warning {
     background: linear-gradient(135deg, #451a03 0%, #78350f 100%);
   }
-  
+
   .metric-card.critical {
     background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
   }
-  
+
   .service-status.healthy {
     background-color: #064e3b;
     color: #6ee7b7;
   }
-  
+
   .service-status.unhealthy {
     background-color: #7f1d1d;
     color: #fca5a5;
@@ -403,6 +407,7 @@
 
 .border-gradient {
   border: 2px solid transparent;
-  background: linear-gradient(white, white) padding-box,
-              linear-gradient(135deg, #667eea, #764ba2) border-box;
+  background:
+    linear-gradient(white, white) padding-box,
+    linear-gradient(135deg, #667eea, #764ba2) border-box;
 }

@@ -2,10 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "CommonJS",
-    "lib": [
-      "ES2020",
-      "DOM"
-    ],
+    "lib": ["ES2020", "DOM"],
     "allowJs": true,
     "checkJs": true,
     "declaration": false,
@@ -27,27 +24,13 @@
     "moduleResolution": "node",
     "baseUrl": "./",
     "paths": {
-      "@/*": [
-        "src/*"
-      ],
-      "@/config/*": [
-        "src/config/*"
-      ],
-      "@/core/*": [
-        "src/core/*"
-      ],
-      "@/services/*": [
-        "src/services/*"
-      ],
-      "@/utils/*": [
-        "src/utils/*"
-      ],
-      "@/api/*": [
-        "src/api/*"
-      ],
-      "@/orchestration/*": [
-        "src/orchestration/*"
-      ]
+      "@/*": ["src/*"],
+      "@/config/*": ["src/config/*"],
+      "@/core/*": ["src/core/*"],
+      "@/services/*": ["src/services/*"],
+      "@/utils/*": ["src/utils/*"],
+      "@/api/*": ["src/api/*"],
+      "@/orchestration/*": ["src/orchestration/*"]
     },
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
@@ -61,11 +44,7 @@
     "isolatedModules": true,
     "jsx": "preserve"
   },
-  "include": [
-    "api/**/*",
-    "next.config.js",
-    "next-env.d.ts"
-  ],
+  "include": ["api/**/*", "next.config.js", "next-env.d.ts"],
   "exclude": [
     "node_modules",
     "dist",

@@ -4,80 +4,85 @@
  */
 
 module.exports = async (req, res) => {
-    try {
-        // Set CORS headers
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  try {
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader(
+      'Access-Control-Allow-Methods',
+      'GET, POST, PUT, DELETE, OPTIONS'
+    );
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization'
+    );
 
-        if (req.method === 'OPTIONS') {
-            return res.status(200).end();
-        }
-
-        const url = req.url || '/';
-        const method = req.method;
-
-        console.log('Webhook manager request:', {
-            url,
-            method,
-            timestamp: new Date().toISOString()
-        });
-
-        // Handle webhook management endpoints
-        if (method === 'GET' && url === '/') {
-            return handleWebhookDashboard(req, res);
-        }
-        
-        if (method === 'GET' && url === '/list') {
-            return handleListWebhooks(req, res);
-        }
-        
-        if (method === 'POST' && url === '/register') {
-            return handleRegisterWebhook(req, res);
-        }
-        
-        if (method === 'DELETE' && url.startsWith('/unregister/')) {
-            return handleUnregisterWebhook(req, res);
-        }
-        
-        if (method === 'GET' && url === '/stats') {
-            return handleWebhookStats(req, res);
-        }
-
-        // Default response for unknown webhooks
-        return res.status(404).json({
-            error: 'Webhook not found',
-            available_endpoints: [
-                '/stripe',
-                '/shopify', 
-                '/zapier',
-                '/github',
-                '/discord',
-                '/slack',
-                '/openai'
-            ],
-            management_endpoints: [
-                '/ (dashboard)',
-                '/list',
-                '/register',
-                '/unregister/:id',
-                '/stats'
-            ]
-        });
-
-    } catch (error) {
-        console.error('Webhook manager error:', error);
-        return res.status(500).json({
-            error: 'Webhook manager failed',
-            message: error.message,
-            timestamp: new Date().toISOString()
-        });
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
     }
+
+    const url = req.url || '/';
+    const method = req.method;
+
+    console.log('Webhook manager request:', {
+      url,
+      method,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Handle webhook management endpoints
+    if (method === 'GET' && url === '/') {
+      return handleWebhookDashboard(req, res);
+    }
+
+    if (method === 'GET' && url === '/list') {
+      return handleListWebhooks(req, res);
+    }
+
+    if (method === 'POST' && url === '/register') {
+      return handleRegisterWebhook(req, res);
+    }
+
+    if (method === 'DELETE' && url.startsWith('/unregister/')) {
+      return handleUnregisterWebhook(req, res);
+    }
+
+    if (method === 'GET' && url === '/stats') {
+      return handleWebhookStats(req, res);
+    }
+
+    // Default response for unknown webhooks
+    return res.status(404).json({
+      error: 'Webhook not found',
+      available_endpoints: [
+        '/stripe',
+        '/shopify',
+        '/zapier',
+        '/github',
+        '/discord',
+        '/slack',
+        '/openai',
+      ],
+      management_endpoints: [
+        '/ (dashboard)',
+        '/list',
+        '/register',
+        '/unregister/:id',
+        '/stats',
+      ],
+    });
+  } catch (error) {
+    console.error('Webhook manager error:', error);
+    return res.status(500).json({
+      error: 'Webhook manager failed',
+      message: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
 };
 
 // Webhook management handlers
 async function handleWebhookDashboard(req, res) {
-    const dashboardHtml = `
+  const dashboardHtml = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -286,162 +291,162 @@ async function handleWebhookDashboard(req, res) {
 </body>
 </html>`;
 
-    res.setHeader('Content-Type', 'text/html');
-    return res.status(200).send(dashboardHtml);
+  res.setHeader('Content-Type', 'text/html');
+  return res.status(200).send(dashboardHtml);
 }
 
 async function handleListWebhooks(req, res) {
-    const webhooks = [
-        {
-            id: 'stripe',
-            name: 'Stripe Payments',
-            url: '/api/webhooks/stripe',
-            status: 'active',
-            events_processed: 1247,
-            avg_response_time: 120,
-            last_event: new Date(Date.now() - 300000).toISOString()
-        },
-        {
-            id: 'shopify',
-            name: 'Shopify Orders',
-            url: '/api/webhooks/shopify',
-            status: 'active',
-            events_processed: 892,
-            avg_response_time: 95,
-            last_event: new Date(Date.now() - 120000).toISOString()
-        },
-        {
-            id: 'zapier',
-            name: 'Zapier Automation',
-            url: '/api/webhooks/zapier',
-            status: 'active',
-            events_processed: 2156,
-            avg_response_time: 85,
-            last_event: new Date(Date.now() - 60000).toISOString()
-        },
-        {
-            id: 'github',
-            name: 'GitHub CI/CD',
-            url: '/api/webhooks/github',
-            status: 'active',
-            events_processed: 567,
-            avg_response_time: 110,
-            last_event: new Date(Date.now() - 1800000).toISOString()
-        },
-        {
-            id: 'discord',
-            name: 'Discord Bot',
-            url: '/api/webhooks/discord',
-            status: 'active',
-            events_processed: 1892,
-            avg_response_time: 140,
-            last_event: new Date(Date.now() - 45000).toISOString()
-        },
-        {
-            id: 'slack',
-            name: 'Slack Integration',
-            url: '/api/webhooks/slack',
-            status: 'active',
-            events_processed: 743,
-            avg_response_time: 98,
-            last_event: new Date(Date.now() - 90000).toISOString()
-        },
-        {
-            id: 'openai',
-            name: 'OpenAI Assistant',
-            url: '/api/webhooks/openai',
-            status: 'active',
-            events_processed: 3421,
-            avg_response_time: 75,
-            last_event: new Date(Date.now() - 15000).toISOString()
-        }
-    ];
+  const webhooks = [
+    {
+      id: 'stripe',
+      name: 'Stripe Payments',
+      url: '/api/webhooks/stripe',
+      status: 'active',
+      events_processed: 1247,
+      avg_response_time: 120,
+      last_event: new Date(Date.now() - 300000).toISOString(),
+    },
+    {
+      id: 'shopify',
+      name: 'Shopify Orders',
+      url: '/api/webhooks/shopify',
+      status: 'active',
+      events_processed: 892,
+      avg_response_time: 95,
+      last_event: new Date(Date.now() - 120000).toISOString(),
+    },
+    {
+      id: 'zapier',
+      name: 'Zapier Automation',
+      url: '/api/webhooks/zapier',
+      status: 'active',
+      events_processed: 2156,
+      avg_response_time: 85,
+      last_event: new Date(Date.now() - 60000).toISOString(),
+    },
+    {
+      id: 'github',
+      name: 'GitHub CI/CD',
+      url: '/api/webhooks/github',
+      status: 'active',
+      events_processed: 567,
+      avg_response_time: 110,
+      last_event: new Date(Date.now() - 1800000).toISOString(),
+    },
+    {
+      id: 'discord',
+      name: 'Discord Bot',
+      url: '/api/webhooks/discord',
+      status: 'active',
+      events_processed: 1892,
+      avg_response_time: 140,
+      last_event: new Date(Date.now() - 45000).toISOString(),
+    },
+    {
+      id: 'slack',
+      name: 'Slack Integration',
+      url: '/api/webhooks/slack',
+      status: 'active',
+      events_processed: 743,
+      avg_response_time: 98,
+      last_event: new Date(Date.now() - 90000).toISOString(),
+    },
+    {
+      id: 'openai',
+      name: 'OpenAI Assistant',
+      url: '/api/webhooks/openai',
+      status: 'active',
+      events_processed: 3421,
+      avg_response_time: 75,
+      last_event: new Date(Date.now() - 15000).toISOString(),
+    },
+  ];
 
-    return res.status(200).json({
-        webhooks,
-        total: webhooks.length,
-        active: webhooks.filter(w => w.status === 'active').length,
-        total_events: webhooks.reduce((sum, w) => sum + w.events_processed, 0),
-        timestamp: new Date().toISOString()
-    });
+  return res.status(200).json({
+    webhooks,
+    total: webhooks.length,
+    active: webhooks.filter(w => w.status === 'active').length,
+    total_events: webhooks.reduce((sum, w) => sum + w.events_processed, 0),
+    timestamp: new Date().toISOString(),
+  });
 }
 
 async function handleRegisterWebhook(req, res) {
-    const { name, url, secret, events } = req.body;
-    
-    console.log('Registering new webhook:', { name, url, events });
-    
-    // TODO: Implement webhook registration logic
-    // TODO: Store webhook configuration in database
-    // TODO: Set up monitoring and analytics
-    
-    const webhookId = Date.now().toString();
-    
-    return res.status(201).json({
-        id: webhookId,
-        name,
-        url,
-        status: 'active',
-        events: events || [],
-        created_at: new Date().toISOString(),
-        secret_configured: !!secret
-    });
+  const { name, url, secret, events } = req.body;
+
+  console.log('Registering new webhook:', { name, url, events });
+
+  // TODO: Implement webhook registration logic
+  // TODO: Store webhook configuration in database
+  // TODO: Set up monitoring and analytics
+
+  const webhookId = Date.now().toString();
+
+  return res.status(201).json({
+    id: webhookId,
+    name,
+    url,
+    status: 'active',
+    events: events || [],
+    created_at: new Date().toISOString(),
+    secret_configured: !!secret,
+  });
 }
 
 async function handleUnregisterWebhook(req, res) {
-    const webhookId = req.url.split('/').pop();
-    
-    console.log('Unregistering webhook:', webhookId);
-    
-    // TODO: Implement webhook removal logic
-    // TODO: Clean up monitoring and analytics
-    // TODO: Notify integrations of webhook removal
-    
-    return res.status(200).json({
-        message: 'Webhook unregistered successfully',
-        id: webhookId,
-        timestamp: new Date().toISOString()
-    });
+  const webhookId = req.url.split('/').pop();
+
+  console.log('Unregistering webhook:', webhookId);
+
+  // TODO: Implement webhook removal logic
+  // TODO: Clean up monitoring and analytics
+  // TODO: Notify integrations of webhook removal
+
+  return res.status(200).json({
+    message: 'Webhook unregistered successfully',
+    id: webhookId,
+    timestamp: new Date().toISOString(),
+  });
 }
 
 async function handleWebhookStats(req, res) {
-    const stats = {
-        total_webhooks: 7,
-        active_webhooks: 7,
-        total_events_today: 8917,
-        total_events_this_month: 267510,
-        avg_response_time: 103,
-        success_rate: 99.7,
-        error_rate: 0.3,
-        uptime: 99.9,
-        by_service: {
-            stripe: { events: 1247, success_rate: 99.8 },
-            shopify: { events: 892, success_rate: 99.9 },
-            zapier: { events: 2156, success_rate: 99.5 },
-            github: { events: 567, success_rate: 100.0 },
-            discord: { events: 1892, success_rate: 99.6 },
-            slack: { events: 743, success_rate: 99.8 },
-            openai: { events: 3421, success_rate: 99.4 }
-        },
-        recent_errors: [
-            {
-                webhook: 'zapier',
-                error: 'Timeout after 30s',
-                timestamp: new Date(Date.now() - 3600000).toISOString()
-            },
-            {
-                webhook: 'openai',
-                error: 'Invalid JSON payload',
-                timestamp: new Date(Date.now() - 7200000).toISOString()
-            }
-        ],
-        performance_metrics: {
-            p50_response_time: 95,
-            p95_response_time: 250,
-            p99_response_time: 500
-        },
-        timestamp: new Date().toISOString()
-    };
-    
-    return res.status(200).json(stats);
+  const stats = {
+    total_webhooks: 7,
+    active_webhooks: 7,
+    total_events_today: 8917,
+    total_events_this_month: 267510,
+    avg_response_time: 103,
+    success_rate: 99.7,
+    error_rate: 0.3,
+    uptime: 99.9,
+    by_service: {
+      stripe: { events: 1247, success_rate: 99.8 },
+      shopify: { events: 892, success_rate: 99.9 },
+      zapier: { events: 2156, success_rate: 99.5 },
+      github: { events: 567, success_rate: 100.0 },
+      discord: { events: 1892, success_rate: 99.6 },
+      slack: { events: 743, success_rate: 99.8 },
+      openai: { events: 3421, success_rate: 99.4 },
+    },
+    recent_errors: [
+      {
+        webhook: 'zapier',
+        error: 'Timeout after 30s',
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
+      },
+      {
+        webhook: 'openai',
+        error: 'Invalid JSON payload',
+        timestamp: new Date(Date.now() - 7200000).toISOString(),
+      },
+    ],
+    performance_metrics: {
+      p50_response_time: 95,
+      p95_response_time: 250,
+      p99_response_time: 500,
+    },
+    timestamp: new Date().toISOString(),
+  };
+
+  return res.status(200).json(stats);
 }

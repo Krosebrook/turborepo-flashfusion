@@ -14,14 +14,14 @@ const webScrapingService = new WebScrapingService();
 
 // Validation middleware
 const handleValidationErrors = (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({
-            success: false,
-            errors: errors.array()
-        });
-    }
-    next();
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      errors: errors.array(),
+    });
+  }
+  next();
 };
 
 /**
@@ -35,16 +35,16 @@ const handleValidationErrors = (req, res, next) => {
  *         description: Service health status
  */
 router.get('/health', async (req, res) => {
-    try {
-        const healthStatus = await webScrapingService.healthCheck();
-        res.json(healthStatus);
-    } catch (error) {
-        logger.error('Web scraping health check error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Health check failed'
-        });
-    }
+  try {
+    const healthStatus = await webScrapingService.healthCheck();
+    res.json(healthStatus);
+  } catch (error) {
+    logger.error('Web scraping health check error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Health check failed',
+    });
+  }
 });
 
 /**
@@ -72,30 +72,30 @@ router.get('/health', async (req, res) => {
  *         description: Successfully extracted content
  */
 router.post(
-    '/extract',
-    [
-        body('url').isURL().withMessage('Valid URL is required'),
-        body('options').optional().isObject()
-    ],
-    handleValidationErrors,
-    async (req, res) => {
-        try {
-            const { url, options = {} } = req.body;
-            const result = await webScrapingService.extractContent(url, options);
+  '/extract',
+  [
+    body('url').isURL().withMessage('Valid URL is required'),
+    body('options').optional().isObject(),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { url, options = {} } = req.body;
+      const result = await webScrapingService.extractContent(url, options);
 
-            if (result.success) {
-                res.json(result);
-            } else {
-                res.status(400).json(result);
-            }
-        } catch (error) {
-            logger.error('Content extraction error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Content extraction failed'
-            });
-        }
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      logger.error('Content extraction error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Content extraction failed',
+      });
     }
+  }
 );
 
 /**
@@ -123,34 +123,34 @@ router.post(
  *         description: Successfully crawled website
  */
 router.post(
-    '/crawl',
-    [
-        body('baseUrl').isURL().withMessage('Valid base URL is required'),
-        body('options').optional().isObject(),
-        body('options.limit')
-            .optional()
-            .isInt({ min: 1, max: 1000 })
-            .withMessage('Limit must be between 1 and 1000')
-    ],
-    handleValidationErrors,
-    async (req, res) => {
-        try {
-            const { baseUrl, options = {} } = req.body;
-            const result = await webScrapingService.crawlWebsite(baseUrl, options);
+  '/crawl',
+  [
+    body('baseUrl').isURL().withMessage('Valid base URL is required'),
+    body('options').optional().isObject(),
+    body('options.limit')
+      .optional()
+      .isInt({ min: 1, max: 1000 })
+      .withMessage('Limit must be between 1 and 1000'),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { baseUrl, options = {} } = req.body;
+      const result = await webScrapingService.crawlWebsite(baseUrl, options);
 
-            if (result.success) {
-                res.json(result);
-            } else {
-                res.status(400).json(result);
-            }
-        } catch (error) {
-            logger.error('Website crawl error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Website crawl failed'
-            });
-        }
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      logger.error('Website crawl error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Website crawl failed',
+      });
     }
+  }
 );
 
 /**
@@ -178,34 +178,34 @@ router.post(
  *         description: Successfully captured screenshot
  */
 router.post(
-    '/screenshot',
-    [
-        body('url').isURL().withMessage('Valid URL is required'),
-        body('options').optional().isObject(),
-        body('options.browserType')
-            .optional()
-            .isIn(['chromium', 'firefox', 'webkit']),
-        body('options.format').optional().isIn(['png', 'jpeg'])
-    ],
-    handleValidationErrors,
-    async (req, res) => {
-        try {
-            const { url, options = {} } = req.body;
-            const result = await webScrapingService.takeScreenshot(url, options);
+  '/screenshot',
+  [
+    body('url').isURL().withMessage('Valid URL is required'),
+    body('options').optional().isObject(),
+    body('options.browserType')
+      .optional()
+      .isIn(['chromium', 'firefox', 'webkit']),
+    body('options.format').optional().isIn(['png', 'jpeg']),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { url, options = {} } = req.body;
+      const result = await webScrapingService.takeScreenshot(url, options);
 
-            if (result.success) {
-                res.json(result);
-            } else {
-                res.status(400).json(result);
-            }
-        } catch (error) {
-            logger.error('Screenshot error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Screenshot failed'
-            });
-        }
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      logger.error('Screenshot error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Screenshot failed',
+      });
     }
+  }
 );
 
 /**
@@ -236,35 +236,35 @@ router.post(
  *         description: Successfully extracted structured data
  */
 router.post(
-    '/extract-data',
-    [
-        body('url').isURL().withMessage('Valid URL is required'),
-        body('selectors').isObject().withMessage('Selectors object is required'),
-        body('options').optional().isObject()
-    ],
-    handleValidationErrors,
-    async (req, res) => {
-        try {
-            const { url, selectors, options = {} } = req.body;
-            const result = await webScrapingService.extractStructuredData(
-                url,
-                selectors,
-                options
-            );
+  '/extract-data',
+  [
+    body('url').isURL().withMessage('Valid URL is required'),
+    body('selectors').isObject().withMessage('Selectors object is required'),
+    body('options').optional().isObject(),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { url, selectors, options = {} } = req.body;
+      const result = await webScrapingService.extractStructuredData(
+        url,
+        selectors,
+        options
+      );
 
-            if (result.success) {
-                res.json(result);
-            } else {
-                res.status(400).json(result);
-            }
-        } catch (error) {
-            logger.error('Structured data extraction error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Structured data extraction failed'
-            });
-        }
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      logger.error('Structured data extraction error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Structured data extraction failed',
+      });
     }
+  }
 );
 
 /**
@@ -295,35 +295,35 @@ router.post(
  *         description: Successfully automated form
  */
 router.post(
-    '/automate-form',
-    [
-        body('url').isURL().withMessage('Valid URL is required'),
-        body('formData').isObject().withMessage('Form data object is required'),
-        body('options').optional().isObject()
-    ],
-    handleValidationErrors,
-    async (req, res) => {
-        try {
-            const { url, formData, options = {} } = req.body;
-            const result = await webScrapingService.automateForm(
-                url,
-                formData,
-                options
-            );
+  '/automate-form',
+  [
+    body('url').isURL().withMessage('Valid URL is required'),
+    body('formData').isObject().withMessage('Form data object is required'),
+    body('options').optional().isObject(),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { url, formData, options = {} } = req.body;
+      const result = await webScrapingService.automateForm(
+        url,
+        formData,
+        options
+      );
 
-            if (result.success) {
-                res.json(result);
-            } else {
-                res.status(400).json(result);
-            }
-        } catch (error) {
-            logger.error('Form automation error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Form automation failed'
-            });
-        }
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      logger.error('Form automation error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Form automation failed',
+      });
     }
+  }
 );
 
 /**
@@ -351,38 +351,38 @@ router.post(
  *         description: Successfully monitored page
  */
 router.post(
-    '/monitor',
-    [
-        body('url').isURL().withMessage('Valid URL is required'),
-        body('options').optional().isObject(),
-        body('options.duration')
-            .optional()
-            .isInt({ min: 1000, max: 600000 })
-            .withMessage('Duration must be between 1s and 10min'),
-        body('options.interval')
-            .optional()
-            .isInt({ min: 1000, max: 60000 })
-            .withMessage('Interval must be between 1s and 1min')
-    ],
-    handleValidationErrors,
-    async (req, res) => {
-        try {
-            const { url, options = {} } = req.body;
-            const result = await webScrapingService.monitorPageChanges(url, options);
+  '/monitor',
+  [
+    body('url').isURL().withMessage('Valid URL is required'),
+    body('options').optional().isObject(),
+    body('options.duration')
+      .optional()
+      .isInt({ min: 1000, max: 600000 })
+      .withMessage('Duration must be between 1s and 10min'),
+    body('options.interval')
+      .optional()
+      .isInt({ min: 1000, max: 60000 })
+      .withMessage('Interval must be between 1s and 1min'),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { url, options = {} } = req.body;
+      const result = await webScrapingService.monitorPageChanges(url, options);
 
-            if (result.success) {
-                res.json(result);
-            } else {
-                res.status(400).json(result);
-            }
-        } catch (error) {
-            logger.error('Page monitoring error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Page monitoring failed'
-            });
-        }
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      logger.error('Page monitoring error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Page monitoring failed',
+      });
     }
+  }
 );
 
 /**
@@ -412,67 +412,67 @@ router.post(
  *         description: Successfully extracted content from multiple URLs
  */
 router.post(
-    '/batch-extract',
-    [
-        body('urls')
-            .isArray({ min: 1, max: 50 })
-            .withMessage('URLs array is required (max 50)'),
-        body('urls.*').isURL().withMessage('All URLs must be valid'),
-        body('options').optional().isObject()
-    ],
-    handleValidationErrors,
-    async (req, res) => {
-        try {
-            const { urls, options = {} } = req.body;
-            const results = [];
+  '/batch-extract',
+  [
+    body('urls')
+      .isArray({ min: 1, max: 50 })
+      .withMessage('URLs array is required (max 50)'),
+    body('urls.*').isURL().withMessage('All URLs must be valid'),
+    body('options').optional().isObject(),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { urls, options = {} } = req.body;
+      const results = [];
 
-            // Process URLs concurrently with a limit
-            const concurrencyLimit = options.concurrency || 5;
-            const chunks = [];
+      // Process URLs concurrently with a limit
+      const concurrencyLimit = options.concurrency || 5;
+      const chunks = [];
 
-            for (let i = 0; i < urls.length; i += concurrencyLimit) {
-                chunks.push(urls.slice(i, i + concurrencyLimit));
-            }
+      for (let i = 0; i < urls.length; i += concurrencyLimit) {
+        chunks.push(urls.slice(i, i + concurrencyLimit));
+      }
 
-            for (const chunk of chunks) {
-                const chunkResults = await Promise.all(
-                    chunk.map((url) => webScrapingService.extractContent(url, options))
-                );
-                results.push(...chunkResults);
-            }
+      for (const chunk of chunks) {
+        const chunkResults = await Promise.all(
+          chunk.map(url => webScrapingService.extractContent(url, options))
+        );
+        results.push(...chunkResults);
+      }
 
-            const successful = results.filter((r) => r.success);
-            const failed = results.filter((r) => !r.success);
+      const successful = results.filter(r => r.success);
+      const failed = results.filter(r => !r.success);
 
-            res.json({
-                success: true,
-                data: {
-                    total: urls.length,
-                    successful: successful.length,
-                    failed: failed.length,
-                    results: results,
-                    processedAt: new Date().toISOString()
-                }
-            });
-        } catch (error) {
-            logger.error('Batch extraction error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Batch extraction failed'
-            });
-        }
+      res.json({
+        success: true,
+        data: {
+          total: urls.length,
+          successful: successful.length,
+          failed: failed.length,
+          results: results,
+          processedAt: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      logger.error('Batch extraction error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Batch extraction failed',
+      });
     }
+  }
 );
 
 // Cleanup middleware - close browsers on server shutdown
 process.on('SIGTERM', async () => {
-    logger.info('Shutting down web scraping service...');
-    await webScrapingService.cleanup();
+  logger.info('Shutting down web scraping service...');
+  await webScrapingService.cleanup();
 });
 
 process.on('SIGINT', async () => {
-    logger.info('Shutting down web scraping service...');
-    await webScrapingService.cleanup();
+  logger.info('Shutting down web scraping service...');
+  await webScrapingService.cleanup();
 });
 
 module.exports = router;

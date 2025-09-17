@@ -2,7 +2,9 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 
 class MongoService {
   constructor() {
-    this.uri = process.env.MONGODB_URI || "mongodb+srv://kylerosebrook:<db_password>@cluster0.j8rktan.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+    this.uri =
+      process.env.MONGODB_URI ||
+      'mongodb+srv://kylerosebrook:<db_password>@cluster0.j8rktan.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
     this.client = null;
     this.db = null;
   }
@@ -18,18 +20,18 @@ class MongoService {
           version: ServerApiVersion.v1,
           strict: true,
           deprecationErrors: true,
-        }
+        },
       });
 
       await this.client.connect();
-      
+
       // Default to flashfusion database
       this.db = this.client.db(process.env.MONGODB_DB_NAME || 'flashfusion');
-      
-      console.log("Successfully connected to MongoDB!");
+
+      console.log('Successfully connected to MongoDB!');
       return this.client;
     } catch (error) {
-      console.error("MongoDB connection error:", error);
+      console.error('MongoDB connection error:', error);
       throw error;
     }
   }
@@ -39,24 +41,24 @@ class MongoService {
       await this.client.close();
       this.client = null;
       this.db = null;
-      console.log("Disconnected from MongoDB");
+      console.log('Disconnected from MongoDB');
     }
   }
 
   async ping() {
     try {
-      await this.client.db("admin").command({ ping: 1 });
-      console.log("MongoDB ping successful!");
+      await this.client.db('admin').command({ ping: 1 });
+      console.log('MongoDB ping successful!');
       return true;
     } catch (error) {
-      console.error("MongoDB ping failed:", error);
+      console.error('MongoDB ping failed:', error);
       return false;
     }
   }
 
   getDatabase(dbName = null) {
     if (!this.client) {
-      throw new Error("MongoDB client not connected. Call connect() first.");
+      throw new Error('MongoDB client not connected. Call connect() first.');
     }
     return dbName ? this.client.db(dbName) : this.db;
   }
@@ -84,9 +86,9 @@ class MongoService {
       createdAt: new Date(),
       updatedAt: new Date(),
       participants: conversationData.participants || [],
-      messages: []
+      messages: [],
     };
-    
+
     const result = await collection.insertOne(conversation);
     return { ...conversation, _id: result.insertedId };
   }
@@ -95,11 +97,11 @@ class MongoService {
     const collection = this.getCollection('conversations');
     const result = await collection.updateOne(
       { _id: conversationId },
-      { 
-        $set: { 
-          ...updateData, 
-          updatedAt: new Date() 
-        } 
+      {
+        $set: {
+          ...updateData,
+          updatedAt: new Date(),
+        },
       }
     );
     return result;
@@ -114,9 +116,9 @@ class MongoService {
     const collection = this.getCollection('conversations');
     return await collection.updateOne(
       { _id: conversationId },
-      { 
+      {
         $addToSet: { participants: userId },
-        $set: { updatedAt: new Date() }
+        $set: { updatedAt: new Date() },
       }
     );
   }
@@ -125,9 +127,9 @@ class MongoService {
     const collection = this.getCollection('conversations');
     return await collection.updateOne(
       { _id: conversationId },
-      { 
+      {
         $pull: { participants: userId },
-        $set: { updatedAt: new Date() }
+        $set: { updatedAt: new Date() },
       }
     );
   }
@@ -138,14 +140,14 @@ class MongoService {
     const message = {
       ...messageData,
       _id: new Date().getTime().toString(),
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
     const result = await collection.updateOne(
       { _id: conversationId },
-      { 
+      {
         $push: { messages: message },
-        $set: { updatedAt: new Date() }
+        $set: { updatedAt: new Date() },
       }
     );
 
@@ -156,15 +158,15 @@ class MongoService {
     const collection = this.getCollection('conversations');
     const conversation = await collection.findOne(
       { _id: conversationId },
-      { 
-        projection: { 
-          messages: { 
-            $slice: [skip, limit] 
-          } 
-        } 
+      {
+        projection: {
+          messages: {
+            $slice: [skip, limit],
+          },
+        },
       }
     );
-    
+
     return conversation?.messages || [];
   }
 
@@ -174,9 +176,9 @@ class MongoService {
     const user = {
       ...userData,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
-    
+
     const result = await collection.insertOne(user);
     return { ...user, _id: result.insertedId };
   }
@@ -190,11 +192,11 @@ class MongoService {
     const collection = this.getCollection('users');
     return await collection.updateOne(
       { _id: userId },
-      { 
-        $set: { 
-          ...updateData, 
-          updatedAt: new Date() 
-        } 
+      {
+        $set: {
+          ...updateData,
+          updatedAt: new Date(),
+        },
       }
     );
   }
@@ -206,15 +208,13 @@ class MongoService {
       userId,
       ...notionData,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
-    
-    const result = await collection.replaceOne(
-      { userId },
-      data,
-      { upsert: true }
-    );
-    
+
+    const result = await collection.replaceOne({ userId }, data, {
+      upsert: true,
+    });
+
     return { ...data, _id: result.insertedId || result.upsertedId };
   }
 
@@ -230,15 +230,13 @@ class MongoService {
       sessionId,
       ...physicsData,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
-    
-    const result = await collection.replaceOne(
-      { sessionId },
-      data,
-      { upsert: true }
-    );
-    
+
+    const result = await collection.replaceOne({ sessionId }, data, {
+      upsert: true,
+    });
+
     return { ...data, _id: result.insertedId || result.upsertedId };
   }
 
@@ -252,9 +250,9 @@ class MongoService {
     const collection = this.getCollection('analytics');
     const event = {
       ...eventData,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
-    
+
     const result = await collection.insertOne(event);
     return { ...event, _id: result.insertedId };
   }
@@ -262,13 +260,13 @@ class MongoService {
   async getAnalytics(userId, startDate, endDate) {
     const collection = this.getCollection('analytics');
     const query = { userId };
-    
+
     if (startDate || endDate) {
       query.timestamp = {};
       if (startDate) query.timestamp.$gte = new Date(startDate);
       if (endDate) query.timestamp.$lte = new Date(endDate);
     }
-    
+
     return await collection.find(query).sort({ timestamp: -1 }).toArray();
   }
 }

@@ -6,7 +6,8 @@
   "scripts": {
     "build": "echo 'No build needed for AI agents'",
     "dev": "echo 'AI agents ready for development'",
-    "lint": "echo 'Linting AI agents'",
+    "lint": "eslint .",
+    "format": "prettier --write .",
     "type-check": "echo 'Type checking AI agents'"
   },
   "dependencies": {
@@ -15,6 +16,8 @@
     "openai": "^4.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0"
   }
 }

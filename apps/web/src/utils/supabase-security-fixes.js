@@ -9,8 +9,10 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
 // Initialize Supabase client with security configurations
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Create clients
@@ -19,26 +21,26 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce',
   },
   db: {
-    schema: 'public'
+    schema: 'public',
   },
   global: {
     headers: {
-      'x-application-name': 'flashfusion-unified'
-    }
-  }
+      'x-application-name': 'flashfusion-unified',
+    },
+  },
 });
 
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
+    persistSession: false,
   },
   db: {
-    schema: 'public'
-  }
+    schema: 'public',
+  },
 });
 
 /**
@@ -57,12 +59,15 @@ export class SecurityHeaders {
         frame-ancestors 'none';
         base-uri 'self';
         form-action 'self';
-      `.replace(/\s+/g, ' ').trim(),
+      `
+        .replace(/\s+/g, ' ')
+        .trim(),
       'X-Frame-Options': 'DENY',
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
       'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload'
+      'Strict-Transport-Security':
+        'max-age=31536000; includeSubDomains; preload',
     };
   }
 
@@ -86,13 +91,19 @@ export class DataValidator {
       const value = data[field];
 
       // Required validation
-      if (rules.required && (value === undefined || value === null || value === '')) {
+      if (
+        rules.required &&
+        (value === undefined || value === null || value === '')
+      ) {
         errors.push(`${field} is required`);
         continue;
       }
 
       // Skip other validations if field is not required and empty
-      if (!rules.required && (value === undefined || value === null || value === '')) {
+      if (
+        !rules.required &&
+        (value === undefined || value === null || value === '')
+      ) {
         continue;
       }
 
@@ -104,10 +115,14 @@ export class DataValidator {
       // String validations
       if (rules.type === 'string') {
         if (rules.minLength && value.length < rules.minLength) {
-          errors.push(`${field} must be at least ${rules.minLength} characters`);
+          errors.push(
+            `${field} must be at least ${rules.minLength} characters`
+          );
         }
         if (rules.maxLength && value.length > rules.maxLength) {
-          errors.push(`${field} must be no more than ${rules.maxLength} characters`);
+          errors.push(
+            `${field} must be no more than ${rules.maxLength} characters`
+          );
         }
         if (rules.pattern && !rules.pattern.test(value)) {
           errors.push(`${field} format is invalid`);
@@ -130,7 +145,9 @@ export class DataValidator {
           errors.push(`${field} must have at least ${rules.minItems} items`);
         }
         if (rules.maxItems && value.length > rules.maxItems) {
-          errors.push(`${field} must have no more than ${rules.maxItems} items`);
+          errors.push(
+            `${field} must have no more than ${rules.maxItems} items`
+          );
         }
       }
 
@@ -186,13 +203,18 @@ export class DataValidator {
  * Rate Limiting Manager
  */
 export class RateLimitManager {
-  static async checkRateLimit(userId, action, timeWindow = 60000, maxRequests = 60) {
+  static async checkRateLimit(
+    userId,
+    action,
+    timeWindow = 60000,
+    maxRequests = 60
+  ) {
     try {
       const { data, error } = await supabaseAdmin.rpc('check_rate_limit', {
         target_user_id: userId,
         action_name: action,
         time_window_ms: timeWindow,
-        max_requests: maxRequests
+        max_requests: maxRequests,
       });
 
       if (error) throw error;
@@ -210,7 +232,7 @@ export class RateLimitManager {
         user_id: userId,
         action: action,
         metadata: metadata,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       console.error('Failed to record rate limit:', error);
@@ -225,15 +247,31 @@ export class AuthenticationManager {
   static async signUp(email, password, userData = {}) {
     try {
       // Validate input
-      DataValidator.validateSchema({ email, password, ...userData }, {
-        email: { required: true, type: 'string', email: true, maxLength: 255 },
-        password: { required: true, type: 'string', minLength: 8, maxLength: 128 },
-        name: { type: 'string', maxLength: 100 }
-      });
+      DataValidator.validateSchema(
+        { email, password, ...userData },
+        {
+          email: {
+            required: true,
+            type: 'string',
+            email: true,
+            maxLength: 255,
+          },
+          password: {
+            required: true,
+            type: 'string',
+            minLength: 8,
+            maxLength: 128,
+          },
+          name: { type: 'string', maxLength: 100 },
+        }
+      );
 
       // Check rate limit
       const canProceed = await RateLimitManager.checkRateLimit(
-        email, 'signup', 300000, 3 // 3 attempts per 5 minutes
+        email,
+        'signup',
+        300000,
+        3 // 3 attempts per 5 minutes
       );
 
       if (!canProceed) {
@@ -244,8 +282,8 @@ export class AuthenticationManager {
         email,
         password,
         options: {
-          data: userData
-        }
+          data: userData,
+        },
       });
 
       if (error) throw error;
@@ -255,7 +293,10 @@ export class AuthenticationManager {
 
       return data;
     } catch (error) {
-      await RateLimitManager.recordRequest(email, 'signup', { success: false, error: error.message });
+      await RateLimitManager.recordRequest(email, 'signup', {
+        success: false,
+        error: error.message,
+      });
       throw error;
     }
   }
@@ -264,7 +305,10 @@ export class AuthenticationManager {
     try {
       // Check rate limit
       const canProceed = await RateLimitManager.checkRateLimit(
-        email, 'signin', 300000, 5 // 5 attempts per 5 minutes
+        email,
+        'signin',
+        300000,
+        5 // 5 attempts per 5 minutes
       );
 
       if (!canProceed) {
@@ -273,7 +317,7 @@ export class AuthenticationManager {
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password,
       });
 
       if (error) throw error;
@@ -283,7 +327,10 @@ export class AuthenticationManager {
 
       return data;
     } catch (error) {
-      await RateLimitManager.recordRequest(email, 'signin', { success: false, error: error.message });
+      await RateLimitManager.recordRequest(email, 'signin', {
+        success: false,
+        error: error.message,
+      });
       throw error;
     }
   }
@@ -292,13 +339,16 @@ export class AuthenticationManager {
     try {
       if (!token) return null;
 
-      const { data: { user }, error } = await supabase.auth.getUser(token);
-      
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser(token);
+
       if (error || !user) return null;
 
       // Additional session validation
       const { data: session } = await supabase.auth.getSession();
-      
+
       if (!session?.session) return null;
 
       return user;
@@ -311,9 +361,9 @@ export class AuthenticationManager {
   static async refreshSession() {
     try {
       const { data, error } = await supabase.auth.refreshSession();
-      
+
       if (error) throw error;
-      
+
       return data;
     } catch (error) {
       console.error('Session refresh failed:', error);
@@ -358,7 +408,9 @@ export class SupabasePerformanceOptimizer {
 
       // Apply ordering
       if (options.orderBy) {
-        query = query.order(options.orderBy, { ascending: options.ascending !== false });
+        query = query.order(options.orderBy, {
+          ascending: options.ascending !== false,
+        });
       }
 
       // Apply pagination
@@ -367,7 +419,10 @@ export class SupabasePerformanceOptimizer {
       }
 
       if (options.offset) {
-        query = query.range(options.offset, options.offset + (options.limit || 10) - 1);
+        query = query.range(
+          options.offset,
+          options.offset + (options.limit || 10) - 1
+        );
       }
 
       const { data, error } = await query;
@@ -384,7 +439,7 @@ export class SupabasePerformanceOptimizer {
   static async batchInsert(table, records, chunkSize = 100) {
     try {
       const results = [];
-      
+
       for (let i = 0; i < records.length; i += chunkSize) {
         const chunk = records.slice(i, i + chunkSize);
         const { data, error } = await supabase
@@ -417,11 +472,14 @@ export class RealtimeSecurityManager {
           event: '*',
           schema: 'public',
           table: table,
-          filter: `user_id=eq.${userId}`
+          filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
+        payload => {
           // Additional security check on the client side
-          if (payload.new?.user_id === userId || payload.old?.user_id === userId) {
+          if (
+            payload.new?.user_id === userId ||
+            payload.old?.user_id === userId
+          ) {
             console.log('Secure realtime update:', payload);
           }
         }
@@ -441,18 +499,23 @@ export class AuditLogger {
         user_id: userId,
         details: details,
         ip_address: ipAddress,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       console.error('Audit logging failed:', error);
     }
   }
 
-  static async logSecurityEvent(eventType, userId, severity = 'medium', details = {}) {
+  static async logSecurityEvent(
+    eventType,
+    userId,
+    severity = 'medium',
+    details = {}
+  ) {
     await this.logEvent(`security_${eventType}`, userId, {
       ...details,
       severity: severity,
-      category: 'security'
+      category: 'security',
     });
   }
 }
@@ -466,19 +529,19 @@ export class EncryptionUtils {
       const algorithm = 'aes-256-gcm';
       const key = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
       const iv = crypto.randomBytes(16);
-      
+
       const cipher = crypto.createCipher(algorithm, key);
       cipher.setAAD(Buffer.from('flashfusion', 'utf8'));
-      
+
       let encrypted = cipher.update(text, 'utf8', 'hex');
       encrypted += cipher.final('hex');
-      
+
       const authTag = cipher.getAuthTag();
-      
+
       return {
         encrypted: encrypted,
         iv: iv.toString('hex'),
-        authTag: authTag.toString('hex')
+        authTag: authTag.toString('hex'),
       };
     } catch (error) {
       console.error('Encryption failed:', error);
@@ -490,14 +553,14 @@ export class EncryptionUtils {
     try {
       const algorithm = 'aes-256-gcm';
       const key = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
-      
+
       const decipher = crypto.createDecipher(algorithm, key);
       decipher.setAAD(Buffer.from('flashfusion', 'utf8'));
       decipher.setAuthTag(Buffer.from(encryptedData.authTag, 'hex'));
-      
+
       let decrypted = decipher.update(encryptedData.encrypted, 'hex', 'utf8');
       decrypted += decipher.final('utf8');
-      
+
       return decrypted;
     } catch (error) {
       console.error('Decryption failed:', error);
@@ -519,19 +582,27 @@ export async function initializeSecureSupabase() {
       'NEXT_PUBLIC_SUPABASE_ANON_KEY',
       'SUPABASE_SERVICE_ROLE_KEY',
       'JWT_SECRET',
-      'ENCRYPTION_KEY'
+      'ENCRYPTION_KEY',
     ];
 
-    const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-    
+    const missingVars = requiredEnvVars.filter(
+      varName => !process.env[varName]
+    );
+
     if (missingVars.length > 0) {
-      throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+      throw new Error(
+        `Missing required environment variables: ${missingVars.join(', ')}`
+      );
     }
 
     // Test database connection
-    const { data, error } = await supabase.from('profiles').select('count').limit(1);
-    
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "table not found" which is ok
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('count')
+      .limit(1);
+
+    if (error && error.code !== 'PGRST116') {
+      // PGRST116 is "table not found" which is ok
       console.warn('Database connection test failed:', error.message);
     }
 

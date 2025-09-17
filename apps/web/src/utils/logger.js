@@ -12,6 +12,6 @@ module.exports = universalLogger;
 
 // Also export as console for absolute compatibility
 if (process.env.VERCEL || process.env.NOW_REGION) {
-    // On Vercel, use pure console to guarantee no issues
-    module.exports = console;
+  // On Vercel, use pure console to guarantee no issues
+  module.exports = console;
 }

@@ -6,11 +6,14 @@
   "scripts": {
     "build": "echo 'No build needed for shared utilities'",
     "dev": "echo 'Shared utilities ready for development'",
-    "lint": "echo 'Linting shared utilities'",
+    "lint": "eslint .",
+    "format": "prettier --write .",
     "type-check": "echo 'Type checking shared utilities'"
   },
   "dependencies": {},
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0"
   }
 }

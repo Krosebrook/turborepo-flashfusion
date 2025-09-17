@@ -5,7 +5,12 @@
 
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { SecurityHeaders, AuthenticationManager, RateLimitManager, AuditLogger } from '../utils/supabase-security-fixes.js';
+import {
+  SecurityHeaders,
+  AuthenticationManager,
+  RateLimitManager,
+  AuditLogger,
+} from '../utils/supabase-security-fixes.js';
 
 /**
  * Security Headers Middleware
@@ -19,45 +24,37 @@ export function securityHeadersMiddleware() {
           "'self'",
           "'unsafe-inline'",
           "'unsafe-eval'",
-          "https://cdn.jsdelivr.net",
-          "https://unpkg.com",
-          "https://js.stripe.com"
+          'https://cdn.jsdelivr.net',
+          'https://unpkg.com',
+          'https://js.stripe.com',
         ],
         styleSrc: [
           "'self'",
           "'unsafe-inline'",
-          "https://fonts.googleapis.com",
-          "https://cdn.jsdelivr.net"
+          'https://fonts.googleapis.com',
+          'https://cdn.jsdelivr.net',
         ],
-        imgSrc: [
-          "'self'",
-          "data:",
-          "https:",
-          "blob:"
-        ],
-        fontSrc: [
-          "'self'",
-          "https://fonts.gstatic.com"
-        ],
+        imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         connectSrc: [
           "'self'",
-          "https://*.supabase.co",
-          "wss://*.supabase.co",
-          "https://api.anthropic.com",
-          "https://api.openai.com",
-          "https://api.stripe.com"
+          'https://*.supabase.co',
+          'wss://*.supabase.co',
+          'https://api.anthropic.com',
+          'https://api.openai.com',
+          'https://api.stripe.com',
         ],
         frameAncestors: ["'none'"],
         baseUri: ["'self'"],
-        formAction: ["'self'"]
-      }
+        formAction: ["'self'"],
+      },
     },
     crossOriginEmbedderPolicy: false,
     hsts: {
       maxAge: 31536000,
       includeSubDomains: true,
-      preload: true
-    }
+      preload: true,
+    },
   });
 }
 
@@ -70,7 +67,7 @@ export function createRateLimitMiddleware(options = {}) {
     max = 100, // limit each IP to 100 requests per windowMs
     message = 'Too many requests from this IP, please try again later.',
     skipSuccessfulRequests = false,
-    skipFailedRequests = false
+    skipFailedRequests = false,
   } = options;
 
   return rateLimit({
@@ -78,13 +75,13 @@ export function createRateLimitMiddleware(options = {}) {
     max,
     message: {
       error: message,
-      retryAfter: windowMs / 1000
+      retryAfter: windowMs / 1000,
     },
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests,
     skipFailedRequests,
-    keyGenerator: (req) => {
+    keyGenerator: req => {
       // Use user ID if authenticated, otherwise fall back to IP
       return req.user?.id || req.ip;
     },
@@ -98,15 +95,15 @@ export function createRateLimitMiddleware(options = {}) {
           ip: req.ip,
           userAgent: req.get('User-Agent'),
           endpoint: req.path,
-          method: req.method
+          method: req.method,
         }
       );
 
       res.status(429).json({
         error: message,
-        retryAfter: windowMs / 1000
+        retryAfter: windowMs / 1000,
       });
-    }
+    },
   });
 }
 
@@ -116,7 +113,7 @@ export function createRateLimitMiddleware(options = {}) {
 export async function authenticationMiddleware(req, res, next) {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
-    
+
     if (!token) {
       req.user = null;
       return next();
@@ -127,21 +124,17 @@ export async function authenticationMiddleware(req, res, next) {
 
     // Log authentication events
     if (user) {
-      await AuditLogger.logEvent(
-        'auth_validated',
-        user.id,
-        {
-          ip: req.ip,
-          userAgent: req.get('User-Agent'),
-          endpoint: req.path
-        }
-      );
+      await AuditLogger.logEvent('auth_validated', user.id, {
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        endpoint: req.path,
+      });
     }
 
     next();
   } catch (error) {
     console.error('Authentication middleware error:', error);
-    
+
     // Log failed authentication
     await AuditLogger.logSecurityEvent(
       'auth_validation_failed',
@@ -150,7 +143,7 @@ export async function authenticationMiddleware(req, res, next) {
       {
         error: error.message,
         ip: req.ip,
-        userAgent: req.get('User-Agent')
+        userAgent: req.get('User-Agent'),
       }
     );
 
@@ -166,7 +159,7 @@ export function requireAuth(req, res, next) {
   if (!req.user) {
     return res.status(401).json({
       error: 'Authentication required',
-      code: 'UNAUTHORIZED'
+      code: 'UNAUTHORIZED',
     });
   }
   next();
@@ -179,16 +172,19 @@ export function requireAdmin(req, res, next) {
   if (!req.user) {
     return res.status(401).json({
       error: 'Authentication required',
-      code: 'UNAUTHORIZED'
+      code: 'UNAUTHORIZED',
     });
   }
 
   // Check if user has admin role
   // This would typically check against your user_roles table
-  if (!req.user.app_metadata?.role === 'admin' && !req.user.user_metadata?.role === 'admin') {
+  if (
+    !req.user.app_metadata?.role === 'admin' &&
+    !req.user.user_metadata?.role === 'admin'
+  ) {
     return res.status(403).json({
       error: 'Admin access required',
-      code: 'FORBIDDEN'
+      code: 'FORBIDDEN',
     });
   }
 
@@ -202,7 +198,7 @@ export function validateInput(schema) {
   return (req, res, next) => {
     try {
       const { DataValidator } = require('../utils/supabase-security-fixes.js');
-      
+
       // Validate and sanitize request body
       if (schema.body && req.body) {
         req.body = DataValidator.validateAndSanitize(req.body, schema.body);
@@ -215,7 +211,10 @@ export function validateInput(schema) {
 
       // Validate URL parameters
       if (schema.params && req.params) {
-        req.params = DataValidator.validateAndSanitize(req.params, schema.params);
+        req.params = DataValidator.validateAndSanitize(
+          req.params,
+          schema.params
+        );
       }
 
       next();
@@ -223,7 +222,7 @@ export function validateInput(schema) {
       return res.status(400).json({
         error: 'Validation failed',
         details: error.message,
-        code: 'VALIDATION_ERROR'
+        code: 'VALIDATION_ERROR',
       });
     }
   };
@@ -235,8 +234,8 @@ export function validateInput(schema) {
 export function auditMiddleware(eventType) {
   return async (req, res, next) => {
     const originalSend = res.send;
-    
-    res.send = function(data) {
+
+    res.send = function (data) {
       // Log the event after response is sent
       setImmediate(async () => {
         try {
@@ -251,7 +250,7 @@ export function auditMiddleware(eventType) {
               statusCode: res.statusCode,
               ip: req.ip,
               userAgent: req.get('User-Agent'),
-              responseTime: Date.now() - req.startTime
+              responseTime: Date.now() - req.startTime,
             },
             req.ip
           );
@@ -284,18 +283,18 @@ export function errorHandlingMiddleware(err, req, res, next) {
         error: err.message,
         stack: err.stack,
         ip: req.ip,
-        endpoint: req.path
+        endpoint: req.path,
       }
     );
   }
 
   // Don't leak error details in production
   const isDevelopment = process.env.NODE_ENV === 'development';
-  
+
   const errorResponse = {
     error: err.message || 'Internal server error',
     code: err.code || 'INTERNAL_ERROR',
-    ...(isDevelopment && { stack: err.stack })
+    ...(isDevelopment && { stack: err.stack }),
   };
 
   const statusCode = err.status || err.statusCode || 500;
@@ -307,12 +306,16 @@ export function errorHandlingMiddleware(err, req, res, next) {
  */
 export function requestLoggingMiddleware(req, res, next) {
   const start = Date.now();
-  
-  console.log(`${req.method} ${req.path} - ${req.ip} - ${req.get('User-Agent')}`);
-  
+
+  console.log(
+    `${req.method} ${req.path} - ${req.ip} - ${req.get('User-Agent')}`
+  );
+
   res.on('finish', () => {
     const duration = Date.now() - start;
-    console.log(`${req.method} ${req.path} - ${res.statusCode} - ${duration}ms`);
+    console.log(
+      `${req.method} ${req.path} - ${res.statusCode} - ${duration}ms`
+    );
   });
 
   next();
@@ -328,18 +331,24 @@ export function corsMiddleware() {
     'https://flashfusion.ai',
     'https://www.flashfusion.ai',
     'https://app.flashfusion.ai',
-    'https://flashfusion-unified.vercel.app'
+    'https://flashfusion-unified.vercel.app',
   ];
 
   return (req, res, next) => {
     const origin = req.headers.origin;
-    
+
     if (allowedOrigins.includes(origin) || !origin) {
       res.setHeader('Access-Control-Allow-Origin', origin || '*');
     }
 
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.setHeader(
+      'Access-Control-Allow-Methods',
+      'GET, POST, PUT, DELETE, OPTIONS'
+    );
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, X-Requested-With'
+    );
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Max-Age', '86400');
 
@@ -357,27 +366,33 @@ export function corsMiddleware() {
 export function applySecurityMiddleware(app) {
   // Request logging
   app.use(requestLoggingMiddleware);
-  
+
   // CORS
   app.use(corsMiddleware());
-  
+
   // Security headers
   app.use(securityHeadersMiddleware());
-  
+
   // Authentication (sets req.user)
   app.use(authenticationMiddleware);
-  
+
   // Rate limiting
-  app.use('/api/', createRateLimitMiddleware({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // 100 requests per 15 minutes
-  }));
+  app.use(
+    '/api/',
+    createRateLimitMiddleware({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 100, // 100 requests per 15 minutes
+    })
+  );
 
   // Stricter rate limiting for auth endpoints
-  app.use('/api/auth/', createRateLimitMiddleware({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10 // 10 auth requests per 15 minutes
-  }));
+  app.use(
+    '/api/auth/',
+    createRateLimitMiddleware({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 10, // 10 auth requests per 15 minutes
+    })
+  );
 
   console.log('✅ Security middleware applied successfully');
 }
@@ -393,5 +408,5 @@ export default {
   auditMiddleware,
   errorHandlingMiddleware,
   requestLoggingMiddleware,
-  corsMiddleware
+  corsMiddleware,
 };

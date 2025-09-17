@@ -9,6 +9,7 @@
     "dev": "nodemon main.js",
     "start": "node main.js",
     "lint": "eslint .",
+    "format": "prettier --write .",
     "type-check": "echo 'No TypeScript in this API'"
   },
   "dependencies": {
@@ -24,6 +25,8 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.0"
+    "nodemon": "^3.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0"
   }
 }

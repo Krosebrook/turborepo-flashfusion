@@ -7,369 +7,410 @@ const { FlashFusionCore } = require('../../core/FlashFusionCore');
 const logger = require('../../utils/logger');
 
 class UserResearchWorkflow {
-    constructor() {
-        this.core = new FlashFusionCore();
-        this.researchTypes = {
-            'ai_developer_discovery': {
-                framework: 'Decision-Driven Research + Behavioral Analysis',
-                duration: '2 weeks',
-                participants: 20,
-                methods: ['interviews', 'task_analysis', 'behavioral_tracking']
-            },
-            'ecommerce_automation': {
-                framework: 'Jobs to Be Done + User Journey Mapping',
-                duration: '3 weeks',
-                participants: 30,
-                methods: ['jtbd_interviews', 'journey_mapping', 'diary_studies']
-            },
-            'content_optimization': {
-                framework: 'Mental Models + Continuous Research',
-                duration: '4 weeks',
-                participants: 50,
-                methods: ['mental_model_interviews', 'workflow_shadowing', 'continuous_feedback']
-            }
-        };
+  constructor() {
+    this.core = new FlashFusionCore();
+    this.researchTypes = {
+      ai_developer_discovery: {
+        framework: 'Decision-Driven Research + Behavioral Analysis',
+        duration: '2 weeks',
+        participants: 20,
+        methods: ['interviews', 'task_analysis', 'behavioral_tracking'],
+      },
+      ecommerce_automation: {
+        framework: 'Jobs to Be Done + User Journey Mapping',
+        duration: '3 weeks',
+        participants: 30,
+        methods: ['jtbd_interviews', 'journey_mapping', 'diary_studies'],
+      },
+      content_optimization: {
+        framework: 'Mental Models + Continuous Research',
+        duration: '4 weeks',
+        participants: 50,
+        methods: [
+          'mental_model_interviews',
+          'workflow_shadowing',
+          'continuous_feedback',
+        ],
+      },
+    };
+  }
+
+  async startResearchStudy(type, options = {}) {
+    logger.info(`Starting research study: ${type}`);
+
+    const studyConfig = this.researchTypes[type];
+    if (!studyConfig) {
+      throw new Error(`Unknown research type: ${type}`);
     }
 
-    async startResearchStudy(type, options = {}) {
-        logger.info(`Starting research study: ${type}`);
+    const workflow = await this.core.createWorkflow('research', {
+      studyType: type,
+      framework: studyConfig.framework,
+      targetParticipants: studyConfig.participants,
+      methods: studyConfig.methods,
+      ...options,
+    });
 
-        const studyConfig = this.researchTypes[type];
-        if (!studyConfig) {
-            throw new Error(`Unknown research type: ${type}`);
-        }
+    // Initialize research agents
+    const researchAgents = {
+      researcher: await this.initializeResearcherAgent(workflow.id),
+      analyst: await this.initializeAnalystAgent(workflow.id),
+      synthesizer: await this.initializeInsightSynthesizer(workflow.id),
+    };
 
-        const workflow = await this.core.createWorkflow('research', {
-            studyType: type,
-            framework: studyConfig.framework,
-            targetParticipants: studyConfig.participants,
-            methods: studyConfig.methods,
-            ...options
-        });
+    // Execute research phases
+    const phases = await this.executeResearchPhases(
+      workflow,
+      researchAgents,
+      studyConfig
+    );
 
-        // Initialize research agents
-        const researchAgents = {
-            researcher: await this.initializeResearcherAgent(workflow.id),
-            analyst: await this.initializeAnalystAgent(workflow.id),
-            synthesizer: await this.initializeInsightSynthesizer(workflow.id)
-        };
+    return {
+      workflowId: workflow.id,
+      studyType: type,
+      phases,
+      estimatedCompletion: this.calculateCompletionDate(studyConfig.duration),
+    };
+  }
 
-        // Execute research phases
-        const phases = await this.executeResearchPhases(workflow, researchAgents, studyConfig);
+  async initializeResearcherAgent(workflowId) {
+    return {
+      id: `researcher_${workflowId}`,
+      capabilities: [
+        'interview_script_generation',
+        'participant_recruitment',
+        'interview_analysis',
+        'survey_design',
+        'behavioral_data_collection',
+      ],
+      tools: {
+        transcription: 'whisper_api',
+        survey_platform: 'typeform_api',
+        scheduling: 'calendly_api',
+        analysis: 'openai_gpt4',
+      },
+      prompts: {
+        interview_analysis: this.getInterviewAnalysisPrompt(),
+        insight_extraction: this.getInsightExtractionPrompt(),
+        participant_screening: this.getParticipantScreeningPrompt(),
+      },
+    };
+  }
 
-        return {
-            workflowId: workflow.id,
-            studyType: type,
-            phases,
-            estimatedCompletion: this.calculateCompletionDate(studyConfig.duration)
-        };
-    }
+  async initializeAnalystAgent(workflowId) {
+    return {
+      id: `analyst_${workflowId}`,
+      capabilities: [
+        'statistical_analysis',
+        'pattern_recognition',
+        'behavioral_data_analysis',
+        'metric_calculation',
+        'trend_identification',
+      ],
+      tools: {
+        analytics: 'mixpanel_api',
+        statistics: 'python_pandas',
+        visualization: 'plotly_api',
+        reporting: 'google_sheets_api',
+      },
+      prompts: {
+        data_analysis: this.getDataAnalysisPrompt(),
+        pattern_recognition: this.getPatternRecognitionPrompt(),
+        statistical_summary: this.getStatisticalSummaryPrompt(),
+      },
+    };
+  }
 
-    async initializeResearcherAgent(workflowId) {
-        return {
-            id: `researcher_${workflowId}`,
-            capabilities: [
-                'interview_script_generation',
-                'participant_recruitment',
-                'interview_analysis',
-                'survey_design',
-                'behavioral_data_collection'
-            ],
-            tools: {
-                transcription: 'whisper_api',
-                survey_platform: 'typeform_api',
-                scheduling: 'calendly_api',
-                analysis: 'openai_gpt4'
-            },
-            prompts: {
-                interview_analysis: this.getInterviewAnalysisPrompt(),
-                insight_extraction: this.getInsightExtractionPrompt(),
-                participant_screening: this.getParticipantScreeningPrompt()
-            }
-        };
-    }
+  async initializeInsightSynthesizer(workflowId) {
+    return {
+      id: `synthesizer_${workflowId}`,
+      capabilities: [
+        'qualitative_coding',
+        'theme_identification',
+        'persona_generation',
+        'journey_mapping',
+        'recommendation_creation',
+      ],
+      tools: {
+        coding: 'atlas_ti_api',
+        visualization: 'miro_api',
+        documentation: 'notion_api',
+        presentation: 'figma_api',
+      },
+      prompts: {
+        theme_extraction: this.getThemeExtractionPrompt(),
+        persona_creation: this.getPersonaCreationPrompt(),
+        recommendation_generation: this.getRecommendationPrompt(),
+      },
+    };
+  }
 
-    async initializeAnalystAgent(workflowId) {
-        return {
-            id: `analyst_${workflowId}`,
-            capabilities: [
-                'statistical_analysis',
-                'pattern_recognition',
-                'behavioral_data_analysis',
-                'metric_calculation',
-                'trend_identification'
-            ],
-            tools: {
-                analytics: 'mixpanel_api',
-                statistics: 'python_pandas',
-                visualization: 'plotly_api',
-                reporting: 'google_sheets_api'
-            },
-            prompts: {
-                data_analysis: this.getDataAnalysisPrompt(),
-                pattern_recognition: this.getPatternRecognitionPrompt(),
-                statistical_summary: this.getStatisticalSummaryPrompt()
-            }
-        };
-    }
+  async executeResearchPhases(workflow, agents, studyConfig) {
+    const phases = [];
 
-    async initializeInsightSynthesizer(workflowId) {
-        return {
-            id: `synthesizer_${workflowId}`,
-            capabilities: [
-                'qualitative_coding',
-                'theme_identification',
-                'persona_generation',
-                'journey_mapping',
-                'recommendation_creation'
-            ],
-            tools: {
-                coding: 'atlas_ti_api',
-                visualization: 'miro_api',
-                documentation: 'notion_api',
-                presentation: 'figma_api'
-            },
-            prompts: {
-                theme_extraction: this.getThemeExtractionPrompt(),
-                persona_creation: this.getPersonaCreationPrompt(),
-                recommendation_generation: this.getRecommendationPrompt()
-            }
-        };
-    }
+    // Phase 1: Research Planning
+    const planningPhase = await this.executePlanningPhase(
+      workflow,
+      agents,
+      studyConfig
+    );
+    phases.push(planningPhase);
 
-    async executeResearchPhases(workflow, agents, studyConfig) {
-        const phases = [];
+    // Phase 2: Data Collection
+    const collectionPhase = await this.executeDataCollectionPhase(
+      workflow,
+      agents,
+      studyConfig
+    );
+    phases.push(collectionPhase);
 
-        // Phase 1: Research Planning
-        const planningPhase = await this.executePlanningPhase(workflow, agents, studyConfig);
-        phases.push(planningPhase);
+    // Phase 3: Analysis
+    const analysisPhase = await this.executeAnalysisPhase(
+      workflow,
+      agents,
+      studyConfig
+    );
+    phases.push(analysisPhase);
 
-        // Phase 2: Data Collection
-        const collectionPhase = await this.executeDataCollectionPhase(workflow, agents, studyConfig);
-        phases.push(collectionPhase);
+    // Phase 4: Synthesis
+    const synthesisPhase = await this.executeSynthesisPhase(
+      workflow,
+      agents,
+      studyConfig
+    );
+    phases.push(synthesisPhase);
 
-        // Phase 3: Analysis
-        const analysisPhase = await this.executeAnalysisPhase(workflow, agents, studyConfig);
-        phases.push(analysisPhase);
+    return phases;
+  }
 
-        // Phase 4: Synthesis
-        const synthesisPhase = await this.executeSynthesisPhase(workflow, agents, studyConfig);
-        phases.push(synthesisPhase);
+  async executePlanningPhase(workflow, agents, studyConfig) {
+    logger.info(`Executing planning phase for workflow: ${workflow.id}`);
 
-        return phases;
-    }
+    const planningTasks = [
+      {
+        agent: agents.researcher,
+        task: 'generate_interview_scripts',
+        config: {
+          studyType: studyConfig.framework,
+          targetAudience: this.getTargetAudience(
+            workflow.configuration.studyType
+          ),
+          researchQuestions: this.getResearchQuestions(
+            workflow.configuration.studyType
+          ),
+        },
+      },
+      {
+        agent: agents.researcher,
+        task: 'design_recruitment_strategy',
+        config: {
+          participantCount: studyConfig.participants,
+          screeningCriteria: this.getScreeningCriteria(
+            workflow.configuration.studyType
+          ),
+          incentiveStructure: this.getIncentiveStructure(
+            studyConfig.participants
+          ),
+        },
+      },
+      {
+        agent: agents.analyst,
+        task: 'setup_analytics_tracking',
+        config: {
+          metrics: this.getTrackingMetrics(workflow.configuration.studyType),
+          platforms: this.getTrackingPlatforms(
+            workflow.configuration.studyType
+          ),
+        },
+      },
+    ];
 
-    async executePlanningPhase(workflow, agents, studyConfig) {
-        logger.info(`Executing planning phase for workflow: ${workflow.id}`);
+    const results = await this.executeTasks(planningTasks);
 
-        const planningTasks = [
-            {
-                agent: agents.researcher,
-                task: 'generate_interview_scripts',
-                config: {
-                    studyType: studyConfig.framework,
-                    targetAudience: this.getTargetAudience(workflow.configuration.studyType),
-                    researchQuestions: this.getResearchQuestions(workflow.configuration.studyType)
-                }
-            },
-            {
-                agent: agents.researcher,
-                task: 'design_recruitment_strategy',
-                config: {
-                    participantCount: studyConfig.participants,
-                    screeningCriteria: this.getScreeningCriteria(workflow.configuration.studyType),
-                    incentiveStructure: this.getIncentiveStructure(studyConfig.participants)
-                }
-            },
-            {
-                agent: agents.analyst,
-                task: 'setup_analytics_tracking',
-                config: {
-                    metrics: this.getTrackingMetrics(workflow.configuration.studyType),
-                    platforms: this.getTrackingPlatforms(workflow.configuration.studyType)
-                }
-            }
-        ];
+    return {
+      phase: 'planning',
+      status: 'completed',
+      duration: '3 days',
+      deliverables: {
+        interview_scripts: results.generate_interview_scripts,
+        recruitment_plan: results.design_recruitment_strategy,
+        analytics_setup: results.setup_analytics_tracking,
+      },
+    };
+  }
 
-        const results = await this.executeTasks(planningTasks);
+  async executeDataCollectionPhase(workflow, agents, studyConfig) {
+    logger.info(`Executing data collection phase for workflow: ${workflow.id}`);
 
-        return {
-            phase: 'planning',
-            status: 'completed',
-            duration: '3 days',
-            deliverables: {
-                interview_scripts: results.generate_interview_scripts,
-                recruitment_plan: results.design_recruitment_strategy,
-                analytics_setup: results.setup_analytics_tracking
-            }
-        };
-    }
+    const collectionTasks = [
+      {
+        agent: agents.researcher,
+        task: 'recruit_participants',
+        config: studyConfig,
+      },
+      {
+        agent: agents.researcher,
+        task: 'conduct_interviews',
+        config: {
+          interviewCount: Math.floor(studyConfig.participants * 0.6),
+          format: 'remote_video',
+          duration: '45_minutes',
+        },
+      },
+      {
+        agent: agents.analyst,
+        task: 'collect_behavioral_data',
+        config: {
+          trackingPeriod: '2_weeks',
+          metrics: this.getBehavioralMetrics(workflow.configuration.studyType),
+        },
+      },
+    ];
 
-    async executeDataCollectionPhase(workflow, agents, studyConfig) {
-        logger.info(`Executing data collection phase for workflow: ${workflow.id}`);
+    const results = await this.executeTasks(collectionTasks);
 
-        const collectionTasks = [
-            {
-                agent: agents.researcher,
-                task: 'recruit_participants',
-                config: studyConfig
-            },
-            {
-                agent: agents.researcher,
-                task: 'conduct_interviews',
-                config: {
-                    interviewCount: Math.floor(studyConfig.participants * 0.6),
-                    format: 'remote_video',
-                    duration: '45_minutes'
-                }
-            },
-            {
-                agent: agents.analyst,
-                task: 'collect_behavioral_data',
-                config: {
-                    trackingPeriod: '2_weeks',
-                    metrics: this.getBehavioralMetrics(workflow.configuration.studyType)
-                }
-            }
-        ];
+    return {
+      phase: 'data_collection',
+      status: 'completed',
+      duration: '1 week',
+      deliverables: {
+        participants_recruited: results.recruit_participants,
+        interviews_completed: results.conduct_interviews,
+        behavioral_data: results.collect_behavioral_data,
+      },
+    };
+  }
 
-        const results = await this.executeTasks(collectionTasks);
+  async executeAnalysisPhase(workflow, agents, _studyConfig) {
+    logger.info(`Executing analysis phase for workflow: ${workflow.id}`);
 
-        return {
-            phase: 'data_collection',
-            status: 'completed',
-            duration: '1 week',
-            deliverables: {
-                participants_recruited: results.recruit_participants,
-                interviews_completed: results.conduct_interviews,
-                behavioral_data: results.collect_behavioral_data
-            }
-        };
-    }
+    const analysisTasks = [
+      {
+        agent: agents.researcher,
+        task: 'transcribe_and_code_interviews',
+        config: {
+          transcriptionService: 'whisper_api',
+          codingFramework: this.getCodingFramework(
+            workflow.configuration.studyType
+          ),
+        },
+      },
+      {
+        agent: agents.analyst,
+        task: 'analyze_behavioral_patterns',
+        config: {
+          analysisType: 'quantitative',
+          statisticalTests: this.getStatisticalTests(
+            workflow.configuration.studyType
+          ),
+        },
+      },
+      {
+        agent: agents.analyst,
+        task: 'identify_usage_patterns',
+        config: {
+          segmentation: 'user_behavior',
+          metrics: this.getUsageMetrics(workflow.configuration.studyType),
+        },
+      },
+    ];
 
-    async executeAnalysisPhase(workflow, agents, _studyConfig) {
-        logger.info(`Executing analysis phase for workflow: ${workflow.id}`);
+    const results = await this.executeTasks(analysisTasks);
 
-        const analysisTasks = [
-            {
-                agent: agents.researcher,
-                task: 'transcribe_and_code_interviews',
-                config: {
-                    transcriptionService: 'whisper_api',
-                    codingFramework: this.getCodingFramework(workflow.configuration.studyType)
-                }
-            },
-            {
-                agent: agents.analyst,
-                task: 'analyze_behavioral_patterns',
-                config: {
-                    analysisType: 'quantitative',
-                    statisticalTests: this.getStatisticalTests(workflow.configuration.studyType)
-                }
-            },
-            {
-                agent: agents.analyst,
-                task: 'identify_usage_patterns',
-                config: {
-                    segmentation: 'user_behavior',
-                    metrics: this.getUsageMetrics(workflow.configuration.studyType)
-                }
-            }
-        ];
+    return {
+      phase: 'analysis',
+      status: 'completed',
+      duration: '4 days',
+      deliverables: {
+        interview_analysis: results.transcribe_and_code_interviews,
+        behavioral_patterns: results.analyze_behavioral_patterns,
+        usage_insights: results.identify_usage_patterns,
+      },
+    };
+  }
 
-        const results = await this.executeTasks(analysisTasks);
+  async executeSynthesisPhase(workflow, agents, studyConfig) {
+    logger.info(`Executing synthesis phase for workflow: ${workflow.id}`);
 
-        return {
-            phase: 'analysis',
-            status: 'completed',
-            duration: '4 days',
-            deliverables: {
-                interview_analysis: results.transcribe_and_code_interviews,
-                behavioral_patterns: results.analyze_behavioral_patterns,
-                usage_insights: results.identify_usage_patterns
-            }
-        };
-    }
+    const synthesisTasks = [
+      {
+        agent: agents.synthesizer,
+        task: 'extract_key_themes',
+        config: {
+          dataSource: 'interview_analysis',
+          framework: studyConfig.framework,
+        },
+      },
+      {
+        agent: agents.synthesizer,
+        task: 'create_user_personas',
+        config: {
+          personaCount: 3,
+          basedOn: 'interview_and_behavioral_data',
+          template: this.getPersonaTemplate(),
+        },
+      },
+      {
+        agent: agents.synthesizer,
+        task: 'generate_recommendations',
+        config: {
+          prioritization: 'impact_effort_matrix',
+          timeHorizon: ['immediate', 'short_term', 'long_term'],
+        },
+      },
+    ];
 
-    async executeSynthesisPhase(workflow, agents, studyConfig) {
-        logger.info(`Executing synthesis phase for workflow: ${workflow.id}`);
+    const results = await this.executeTasks(synthesisTasks);
 
-        const synthesisTasks = [
-            {
-                agent: agents.synthesizer,
-                task: 'extract_key_themes',
-                config: {
-                    dataSource: 'interview_analysis',
-                    framework: studyConfig.framework
-                }
-            },
-            {
-                agent: agents.synthesizer,
-                task: 'create_user_personas',
-                config: {
-                    personaCount: 3,
-                    basedOn: 'interview_and_behavioral_data',
-                    template: this.getPersonaTemplate()
-                }
-            },
-            {
-                agent: agents.synthesizer,
-                task: 'generate_recommendations',
-                config: {
-                    prioritization: 'impact_effort_matrix',
-                    timeHorizon: ['immediate', 'short_term', 'long_term']
-                }
-            }
-        ];
+    return {
+      phase: 'synthesis',
+      status: 'completed',
+      duration: '3 days',
+      deliverables: {
+        key_themes: results.extract_key_themes,
+        user_personas: results.create_user_personas,
+        recommendations: results.generate_recommendations,
+      },
+    };
+  }
 
-        const results = await this.executeTasks(synthesisTasks);
+  // Helper methods for research configuration
+  getTargetAudience(studyType) {
+    const audiences = {
+      ai_developer_discovery:
+        'AI developers and automation specialists with 2+ years experience',
+      ecommerce_automation:
+        'Multi-platform e-commerce sellers with $50K+ annual revenue',
+      content_optimization:
+        'Content creators and digital marketers managing 3+ platforms',
+    };
+    return audiences[studyType];
+  }
 
-        return {
-            phase: 'synthesis',
-            status: 'completed',
-            duration: '3 days',
-            deliverables: {
-                key_themes: results.extract_key_themes,
-                user_personas: results.create_user_personas,
-                recommendations: results.generate_recommendations
-            }
-        };
-    }
+  getResearchQuestions(studyType) {
+    const questions = {
+      ai_developer_discovery: [
+        'What are the biggest time sinks in AI development workflows?',
+        'Where do developers get stuck when integrating multiple AI services?',
+        'What would make AI orchestration 10x easier?',
+      ],
+      ecommerce_automation: [
+        'What manual tasks consume the most time in multi-platform selling?',
+        'Where do current automation tools fail?',
+        'What would perfect e-commerce automation look like?',
+      ],
+      content_optimization: [
+        'How do creators currently adapt content for different platforms?',
+        'What are the biggest bottlenecks in content repurposing?',
+        'What would ideal content multiplication workflow include?',
+      ],
+    };
+    return questions[studyType];
+  }
 
-    // Helper methods for research configuration
-    getTargetAudience(studyType) {
-        const audiences = {
-            'ai_developer_discovery': 'AI developers and automation specialists with 2+ years experience',
-            'ecommerce_automation': 'Multi-platform e-commerce sellers with $50K+ annual revenue',
-            'content_optimization': 'Content creators and digital marketers managing 3+ platforms'
-        };
-        return audiences[studyType];
-    }
-
-    getResearchQuestions(studyType) {
-        const questions = {
-            'ai_developer_discovery': [
-                'What are the biggest time sinks in AI development workflows?',
-                'Where do developers get stuck when integrating multiple AI services?',
-                'What would make AI orchestration 10x easier?'
-            ],
-            'ecommerce_automation': [
-                'What manual tasks consume the most time in multi-platform selling?',
-                'Where do current automation tools fail?',
-                'What would perfect e-commerce automation look like?'
-            ],
-            'content_optimization': [
-                'How do creators currently adapt content for different platforms?',
-                'What are the biggest bottlenecks in content repurposing?',
-                'What would ideal content multiplication workflow include?'
-            ]
-        };
-        return questions[studyType];
-    }
-
-    // Prompt templates for AI agents
-    getInterviewAnalysisPrompt() {
-        return `
+  // Prompt templates for AI agents
+  getInterviewAnalysisPrompt() {
+    return `
         You are an expert user researcher analyzing interview transcripts. Your task is to:
         
         1. Extract key pain points and frustrations
@@ -384,10 +425,10 @@ class UserResearchWorkflow {
         - Opportunities (with business impact potential)
         - Supporting Quotes (with participant context)
         `;
-    }
+  }
 
-    getInsightExtractionPrompt() {
-        return `
+  getInsightExtractionPrompt() {
+    return `
         Extract actionable insights from user research data. Focus on:
         
         1. Behavioral patterns that indicate real needs
@@ -398,10 +439,10 @@ class UserResearchWorkflow {
         
         Present insights in order of business impact and user value.
         `;
-    }
+  }
 
-    getRecommendationPrompt() {
-        return `
+  getRecommendationPrompt() {
+    return `
         Based on user research findings, generate product recommendations:
         
         1. Immediate wins (can implement in 1-2 weeks)
@@ -414,45 +455,45 @@ class UserResearchWorkflow {
         - Business value potential
         - Supporting research evidence
         `;
+  }
+
+  async executeTasks(tasks) {
+    const results = {};
+
+    for (const task of tasks) {
+      logger.info(`Executing task: ${task.task} with agent: ${task.agent.id}`);
+
+      // Simulate task execution (replace with actual AI agent calls)
+      results[task.task] = await this.simulateTaskExecution(task);
     }
 
-    async executeTasks(tasks) {
-        const results = {};
+    return results;
+  }
 
-        for (const task of tasks) {
-            logger.info(`Executing task: ${task.task} with agent: ${task.agent.id}`);
+  async simulateTaskExecution(task) {
+    // Placeholder for actual AI agent task execution
+    return {
+      status: 'completed',
+      task: task.task,
+      agent: task.agent.id,
+      config: task.config,
+      completedAt: new Date().toISOString(),
+    };
+  }
 
-            // Simulate task execution (replace with actual AI agent calls)
-            results[task.task] = await this.simulateTaskExecution(task);
-        }
+  calculateCompletionDate(duration) {
+    const durationMap = {
+      '2 weeks': 14,
+      '3 weeks': 21,
+      '4 weeks': 28,
+    };
 
-        return results;
-    }
+    const days = durationMap[duration] || 14;
+    const completionDate = new Date();
+    completionDate.setDate(completionDate.getDate() + days);
 
-    async simulateTaskExecution(task) {
-        // Placeholder for actual AI agent task execution
-        return {
-            status: 'completed',
-            task: task.task,
-            agent: task.agent.id,
-            config: task.config,
-            completedAt: new Date().toISOString()
-        };
-    }
-
-    calculateCompletionDate(duration) {
-        const durationMap = {
-            '2 weeks': 14,
-            '3 weeks': 21,
-            '4 weeks': 28
-        };
-
-        const days = durationMap[duration] || 14;
-        const completionDate = new Date();
-        completionDate.setDate(completionDate.getDate() + days);
-
-        return completionDate.toISOString();
-    }
+    return completionDate.toISOString();
+  }
 }
 
 module.exports = { UserResearchWorkflow };
