@@ -1,0 +1,15 @@
+{
+  "lastOperation": "drift",
+  "status": "drift_detected",
+  "timestamp": "2025-09-17T10:28:25.649Z",
+  "details": {
+    "terraform": {
+      "driftDetected": true,
+      "details": "Refreshing state...\n\nTerraform will perform the following actions:\n\n  # aws_vpc.main will be created\n  + resource \"aws_vpc\" \"main\" {\n      + cidr_block         = \"10.0.0.0/16\"\n      + enable_dns_support = true\n      + id                 = (known after apply)\n    }\n\nPlan: 1 to add, 0 to change, 0 to destroy.\n"
+    },
+    "cdk": {
+      "driftDetected": true,
+      "details": "Stack FlashFusion-dev\nResources\n[+] AWS::EC2::VPC FlashFusionVPC\n[+] AWS::EC2::SecurityGroup WebSecurityGroup\n[+] AWS::S3::Bucket AssetsBucket\n"
+    }
+  }
+}
