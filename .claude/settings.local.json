@@ -8,7 +8,9 @@
       "Bash(git commit:*)",
       "Bash(gh repo clone:*)",
       "Bash(npm run prepare:*)",
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Bash(npm run commit-check:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []
