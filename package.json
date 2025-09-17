@@ -12,7 +12,9 @@
     "restore-state": "node restore-session.js",
     "next-steps": "node restore-session.js",
     "deploy": "vercel --prod",
-    "ff": "node tools/cli/ff-cli.js"
+    "ff": "node tools/cli/ff-cli.js",
+    "perf": "node tools/cli/performance-cli.js",
+    "demo": "node tools/demo/performance-demo.js"
   },
   "devDependencies": {
     "turbo": "^2.3.0",
