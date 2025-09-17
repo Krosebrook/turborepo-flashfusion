@@ -1,0 +1,257 @@
+name: Infrastructure Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'templates/infrastructure/**'
+      - 'tools/infrastructure/**'
+      - '.github/workflows/infrastructure.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'templates/infrastructure/**'
+      - 'tools/infrastructure/**'
+
+env:
+  AWS_REGION: us-west-2
+  TF_VAR_environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+  TF_VAR_project_name: flashfusion
+
+jobs:
+  validate:
+    name: Validate Infrastructure
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "~1.6"
+
+    - name: Setup AWS CDK
+      run: npm install -g aws-cdk
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Validate Infrastructure Syntax
+      run: npm run infra:validate
+
+    - name: Generate Infrastructure Plan
+      run: npm run infra:plan
+      id: plan
+
+    - name: Check for Infrastructure Drift
+      run: npm run infra:drift
+      continue-on-error: true
+
+    - name: Show Pipeline Status
+      run: npm run infra:status
+
+    - name: Comment PR with Plan Results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = './tools/infrastructure/pipeline.log';
+          
+          let logContent = 'No pipeline logs found';
+          if (fs.existsSync(path)) {
+            logContent = fs.readFileSync(path, 'utf8');
+          }
+          
+          const comment = `
+          ## 🏗️ Infrastructure Pipeline Results
+          
+          **Environment:** \`${{ env.TF_VAR_environment }}\`
+          
+          ### Plan Status
+          The infrastructure validation and planning has completed. 
+          
+          <details>
+          <summary>📋 View Pipeline Logs</summary>
+          
+          \`\`\`
+          ${logContent.slice(-2000)} // Last 2000 characters
+          \`\`\`
+          
+          </details>
+          
+          ### Next Steps
+          - ✅ Review the plan output above
+          - ✅ Ensure all changes are expected
+          - ✅ Merge to deploy infrastructure changes
+          `;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+  deploy:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    permissions:
+      contents: read
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "~1.6"
+
+    - name: Setup AWS CDK
+      run: npm install -g aws-cdk
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Apply Infrastructure Changes
+      run: npm run infra:apply
+
+    - name: Post-Deploy Drift Check
+      run: npm run infra:drift
+
+    - name: Upload Pipeline Logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: infrastructure-logs-${{ github.run_id }}
+        path: tools/infrastructure/pipeline.log
+        retention-days: 30
+
+  drift-check:
+    name: Daily Drift Detection
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    permissions:
+      contents: read
+      issues: write
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "~1.6"
+
+    - name: Setup AWS CDK
+      run: npm install -g aws-cdk
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Check Infrastructure Drift
+      run: npm run infra:drift
+      id: drift
+
+    - name: Create Issue on Drift Detection
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const stateFile = './tools/infrastructure/pipeline-state.json';
+          
+          let driftDetails = 'No drift details available';
+          if (fs.existsSync(stateFile)) {
+            const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+            driftDetails = JSON.stringify(state.details, null, 2);
+          }
+          
+          const issue = await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: '🚨 Infrastructure Drift Detected',
+            body: `
+            ## Infrastructure Drift Alert
+            
+            **Environment:** Production
+            **Detection Time:** ${new Date().toISOString()}
+            
+            Our automated drift detection has identified differences between the deployed infrastructure and the code configuration.
+            
+            ### Drift Details
+            \`\`\`json
+            ${driftDetails}
+            \`\`\`
+            
+            ### Required Actions
+            1. Review the drift details above
+            2. Determine if changes were intentional
+            3. Update infrastructure code if needed
+            4. Run \`npm run infra:apply\` to reconcile drift
+            
+            ### Investigation Commands
+            \`\`\`bash
+            npm run infra:drift    # Re-run drift detection
+            npm run infra:plan     # Preview corrective changes
+            npm run infra:status   # Check pipeline status
+            \`\`\`
+            `,
+            labels: ['infrastructure', 'drift', 'urgent']
+          });
+          
+          console.log(\`Created issue #\${issue.data.number}\`);
+
+# Schedule drift detection to run daily at 6 AM UTC
+on:
+  schedule:
+    - cron: '0 6 * * *'

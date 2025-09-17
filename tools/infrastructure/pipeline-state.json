@@ -1,19 +1,15 @@
 {
-  "lastOperation": "validate",
-  "status": "failed",
-  "timestamp": "2025-09-17T10:24:58.606Z",
+  "lastOperation": "drift",
+  "status": "drift_detected",
+  "timestamp": "2025-09-17T10:28:25.649Z",
   "details": {
     "terraform": {
-      "valid": false,
-      "error": "Command failed: terraform version\n/bin/sh: 1: terraform: not found\n"
+      "driftDetected": true,
+      "details": "Refreshing state...\n\nTerraform will perform the following actions:\n\n  # aws_vpc.main will be created\n  + resource \"aws_vpc\" \"main\" {\n      + cidr_block         = \"10.0.0.0/16\"\n      + enable_dns_support = true\n      + id                 = (known after apply)\n    }\n\nPlan: 1 to add, 0 to change, 0 to destroy.\n"
     },
     "cdk": {
-      "valid": false,
-      "error": "Command failed: cdk version\n/bin/sh: 1: cdk: not found\n"
-    },
-    "policies": {
-      "skipped": true,
-      "reason": "no_policies"
+      "driftDetected": true,
+      "details": "Stack FlashFusion-dev\nResources\n[+] AWS::EC2::VPC FlashFusionVPC\n[+] AWS::EC2::SecurityGroup WebSecurityGroup\n[+] AWS::S3::Bucket AssetsBucket\n"
     }
   }
 }
