@@ -23,7 +23,7 @@ describe('AgentOrchestrator', () => {
 
     // Import the class
     const orchestratorModule = await import('./AgentOrchestrator.js');
-    AgentOrchestrator = orchestratorModule.default || orchestratorModule.AgentOrchestrator;
+    AgentOrchestrator = orchestratorModule.AgentOrchestrator;
     
     // Create instance
     orchestrator = new AgentOrchestrator();

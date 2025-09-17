@@ -34,7 +34,7 @@ describe('UserResearchWorkflow', () => {
 
     // Import the class
     const workflowModule = await import('./UserResearchWorkflow.js');
-    UserResearchWorkflow = workflowModule.default || workflowModule.UserResearchWorkflow;
+    UserResearchWorkflow = workflowModule.UserResearchWorkflow;
     
     // Create instance
     workflow = new UserResearchWorkflow();
