@@ -1,15 +1,16 @@
 # Workspace Checkpoint
 
-- **Timestamp:** 2025-09-17T11:00:05Z
+- **Timestamp:** 2025-09-17T11:11:48Z
 - **Branch:** main
 
-## Local Changes
-- Added `codex.md` as a duplicate of `CLAUDE.md`.
-- Existing modified files detected prior to this checkpoint: `.gitignore`, `package-lock.json`, `.claude/`, `nul`.
+## Local Observations
+-  is referenced in  but not present in the current workspace snapshot.
+-  is not present; recopy once  becomes available.
+- Pre-existing modified/untracked entries include: , , , , , .
 
-## Rollback Guidance
-- To discard the duplicated file: `git rm --cached codex.md && rm codex.md` if tracked, or simply `rm codex.md` if untracked.
-- Review other pre-existing changes before proceeding to ensure they align with your current task.
+## Rollback / Spin-Up Checklist
+- If  surfaces, duplicate it with  to recreate the Codex guide.
+- Review and stage unrelated pre-existing changes before continuing feature work.
 
 ## Notes
 - Use this checkpoint during workspace spin-up to verify local state before continuing development.
