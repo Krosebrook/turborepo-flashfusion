@@ -5,6 +5,7 @@
 
 const dashboardHTML = require('./dashboard-template');
 const webhookManager = require('./webhooks/webhook-manager');
+const githubReposHandler = require('./github-repos');
 
 module.exports = async (req, res) => {
     try {
@@ -31,6 +32,9 @@ module.exports = async (req, res) => {
             
             case 'api':
                 return serveAPI(res, route.endpoint, req);
+            
+            case 'github-repos':
+                return githubReposHandler(req, res);
             
             case 'webhook':
                 return webhookManager(req, res);
@@ -65,6 +69,11 @@ function getRoute(url) {
     // Status check
     if (url === '/api/status' || url === '/status') {
         return { type: 'status' };
+    }
+    
+    // GitHub repositories endpoint
+    if (url.startsWith('/api/github/repositories')) {
+        return { type: 'github-repos' };
     }
     
     // Webhooks
@@ -120,6 +129,7 @@ function serveStatus(res) {
             dashboard: '/',
             health: '/api/health',
             status: '/api/status',
+            github_repositories: '/api/github/repositories',
             webhooks: '/api/webhooks/*'
         }
     });
