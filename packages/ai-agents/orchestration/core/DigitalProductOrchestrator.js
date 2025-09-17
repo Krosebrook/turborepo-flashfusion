@@ -16,204 +16,204 @@ const WorkflowStateManager = require('./WorkflowStateManager');
 const PerformanceMonitor = require('./PerformanceMonitor');
 
 class DigitalProductOrchestrator extends EventEmitter {
-    constructor() {
-        super();
-        this.agents = new Map();
-        this.activeWorkflows = new Map();
-        this.communication = new AgentCommunicationSystem();
-        this.roleSelector = new DynamicRoleSelector();
-        this.monitor = new PerformanceMonitor();
-        this.context = new ContextManager();
-        this.workflow = new WorkflowStateManager();
-        this.isInitialized = false;
+  constructor() {
+    super();
+    this.agents = new Map();
+    this.activeWorkflows = new Map();
+    this.communication = new AgentCommunicationSystem();
+    this.roleSelector = new DynamicRoleSelector();
+    this.monitor = new PerformanceMonitor();
+    this.context = new ContextManager();
+    this.workflow = new WorkflowStateManager();
+    this.isInitialized = false;
+  }
+
+  async initialize() {
+    if (this.isInitialized) {
+      return;
     }
 
-    async initialize() {
-        if (this.isInitialized) {
-            return;
-        }
+    try {
+      // Initialize FlashFusion AI services
+      const aiHealth = await SecureAIService.healthCheck();
+      console.log('🤖 AI Services Status:', aiHealth.status);
 
-        try {
-            // Initialize FlashFusion AI services
-            const aiHealth = await SecureAIService.healthCheck();
-            console.log('🤖 AI Services Status:', aiHealth.status);
+      // Initialize orchestration subsystems
+      await this.communication.initialize();
+      await this.context.initialize();
 
-            // Initialize orchestration subsystems
-            await this.communication.initialize();
-            await this.context.initialize();
+      // Set up event listeners
+      this.setupEventListeners();
 
-            // Set up event listeners
-            this.setupEventListeners();
+      this.isInitialized = true;
+      console.log(
+        '🎭 Digital Product Orchestrator initialized for FlashFusion'
+      );
 
-            this.isInitialized = true;
-            console.log(
-                '🎭 Digital Product Orchestrator initialized for FlashFusion'
-            );
-
-            return {
-                status: 'initialized',
-                services: {
-                    ai: aiHealth.status,
-                    communication: 'ready',
-                    context: 'ready',
-                    workflow: 'ready'
-                }
-            };
-        } catch (error) {
-            console.error('❌ Orchestrator initialization failed:', error);
-            throw error;
-        }
+      return {
+        status: 'initialized',
+        services: {
+          ai: aiHealth.status,
+          communication: 'ready',
+          context: 'ready',
+          workflow: 'ready',
+        },
+      };
+    } catch (error) {
+      console.error('❌ Orchestrator initialization failed:', error);
+      throw error;
     }
+  }
 
-    setupEventListeners() {
-        this.communication.on(
-            'handoff:completed',
-            this.handleHandoffCompleted.bind(this)
+  setupEventListeners() {
+    this.communication.on(
+      'handoff:completed',
+      this.handleHandoffCompleted.bind(this)
+    );
+    this.communication.on(
+      'handoff:timeout',
+      this.handleHandoffTimeout.bind(this)
+    );
+    this.monitor.on('alert:triggered', this.handleMonitorAlert.bind(this));
+  }
+
+  async processProductRequest(request) {
+    try {
+      console.log(`🎯 Processing product request: ${request.description}`);
+
+      // Validate AI services are available
+      const aiHealth = await SecureAIService.healthCheck();
+      if (aiHealth.status !== 'healthy') {
+        throw new Error(`AI services unavailable: ${aiHealth.status}`);
+      }
+
+      // Analyze request and select agents
+      const analysis = await this.roleSelector.analyzeRequest(request);
+      const selectedAgents = this.roleSelector.selectOptimalAgents(analysis);
+
+      console.log(
+        `📋 Selected ${selectedAgents.length} agents:`,
+        selectedAgents.map(a => a.role)
+      );
+
+      // Create or get project context
+      let context = await this.context.getProjectContext(request.projectId);
+      if (!context) {
+        context = await this.context.createProjectContext(request.projectId, {
+          ...request.context,
+          createdBy: 'FlashFusion-Orchestrator',
+        });
+        await this.workflow.createWorkflow(request.projectId);
+      }
+
+      // Execute agent workflow with FlashFusion AI
+      const result = await this.executeFlashFusionWorkflow(
+        selectedAgents,
+        request,
+        context
+      );
+
+      return {
+        success: true,
+        projectId: request.projectId,
+        agents: selectedAgents.map(a => a.role),
+        results: result,
+        timestamp: Date.now(),
+      };
+    } catch (error) {
+      console.error('❌ Error processing request:', error);
+      return {
+        success: false,
+        error: error.message,
+        timestamp: Date.now(),
+      };
+    }
+  }
+
+  async executeFlashFusionWorkflow(selectedAgents, request, _context) {
+    const results = [];
+
+    for (const agent of selectedAgents) {
+      try {
+        console.log(`🔄 Executing ${agent.role} for ${agent.capability}`);
+
+        // Get relevant context for agent
+        const agentContext = await this.context.getRelevantContext(
+          request.projectId,
+          agent.role
         );
-        this.communication.on(
-            'handoff:timeout',
-            this.handleHandoffTimeout.bind(this)
+
+        // Build agent prompt
+        const prompt = this.buildFlashFusionAgentPrompt(
+          agent,
+          request,
+          agentContext
         );
-        this.monitor.on('alert:triggered', this.handleMonitorAlert.bind(this));
+
+        // Use FlashFusion's SecureAIService
+        const aiResponse = await SecureAIService.generateCompletion(
+          prompt,
+          null,
+          {
+            maxTokens: 1500,
+            temperature: 0.7,
+          }
+        );
+
+        // Process and validate the AI response
+        const agentResult = {
+          content: aiResponse.content,
+          provider: aiResponse.provider,
+          model: aiResponse.model,
+          usage: aiResponse.usage,
+        };
+
+        // Update context with results
+        await this.context.updateProjectContext(
+          request.projectId,
+          { [agent.capability]: agentResult },
+          agent.role
+        );
+
+        // Update progress
+        await this.workflow.updateProgress(
+          request.projectId,
+          agent.capability,
+          'completed'
+        );
+
+        results.push({
+          agent: agent.role,
+          capability: agent.capability,
+          result: agentResult,
+          timestamp: Date.now(),
+        });
+
+        console.log(`✅ ${agent.role} completed successfully`);
+      } catch (error) {
+        console.error(`❌ Agent ${agent.role} failed:`, error);
+        results.push({
+          agent: agent.role,
+          capability: agent.capability,
+          error: error.message,
+          timestamp: Date.now(),
+        });
+      }
     }
 
-    async processProductRequest(request) {
-        try {
-            console.log(`🎯 Processing product request: ${request.description}`);
+    return results;
+  }
 
-            // Validate AI services are available
-            const aiHealth = await SecureAIService.healthCheck();
-            if (aiHealth.status !== 'healthy') {
-                throw new Error(`AI services unavailable: ${aiHealth.status}`);
-            }
-
-            // Analyze request and select agents
-            const analysis = await this.roleSelector.analyzeRequest(request);
-            const selectedAgents = this.roleSelector.selectOptimalAgents(analysis);
-
-            console.log(
-                `📋 Selected ${selectedAgents.length} agents:`,
-                selectedAgents.map((a) => a.role)
-            );
-
-            // Create or get project context
-            let context = await this.context.getProjectContext(request.projectId);
-            if (!context) {
-                context = await this.context.createProjectContext(request.projectId, {
-                    ...request.context,
-                    createdBy: 'FlashFusion-Orchestrator'
-                });
-                await this.workflow.createWorkflow(request.projectId);
-            }
-
-            // Execute agent workflow with FlashFusion AI
-            const result = await this.executeFlashFusionWorkflow(
-                selectedAgents,
-                request,
-                context
-            );
-
-            return {
-                success: true,
-                projectId: request.projectId,
-                agents: selectedAgents.map((a) => a.role),
-                results: result,
-                timestamp: Date.now()
-            };
-        } catch (error) {
-            console.error('❌ Error processing request:', error);
-            return {
-                success: false,
-                error: error.message,
-                timestamp: Date.now()
-            };
-        }
-    }
-
-    async executeFlashFusionWorkflow(selectedAgents, request, _context) {
-        const results = [];
-
-        for (const agent of selectedAgents) {
-            try {
-                console.log(`🔄 Executing ${agent.role} for ${agent.capability}`);
-
-                // Get relevant context for agent
-                const agentContext = await this.context.getRelevantContext(
-                    request.projectId,
-                    agent.role
-                );
-
-                // Build agent prompt
-                const prompt = this.buildFlashFusionAgentPrompt(
-                    agent,
-                    request,
-                    agentContext
-                );
-
-                // Use FlashFusion's SecureAIService
-                const aiResponse = await SecureAIService.generateCompletion(
-                    prompt,
-                    null,
-                    {
-                        maxTokens: 1500,
-                        temperature: 0.7
-                    }
-                );
-
-                // Process and validate the AI response
-                const agentResult = {
-                    content: aiResponse.content,
-                    provider: aiResponse.provider,
-                    model: aiResponse.model,
-                    usage: aiResponse.usage
-                };
-
-                // Update context with results
-                await this.context.updateProjectContext(
-                    request.projectId,
-                    { [agent.capability]: agentResult },
-                    agent.role
-                );
-
-                // Update progress
-                await this.workflow.updateProgress(
-                    request.projectId,
-                    agent.capability,
-                    'completed'
-                );
-
-                results.push({
-                    agent: agent.role,
-                    capability: agent.capability,
-                    result: agentResult,
-                    timestamp: Date.now()
-                });
-
-                console.log(`✅ ${agent.role} completed successfully`);
-            } catch (error) {
-                console.error(`❌ Agent ${agent.role} failed:`, error);
-                results.push({
-                    agent: agent.role,
-                    capability: agent.capability,
-                    error: error.message,
-                    timestamp: Date.now()
-                });
-            }
-        }
-
-        return results;
-    }
-
-    buildFlashFusionAgentPrompt(agent, request, context) {
-        const baseContext = `
+  buildFlashFusionAgentPrompt(agent, request, context) {
+    const baseContext = `
 Project: ${request.projectId}
 Request: ${request.description}
 Current Phase: ${context.project?.phase || 'discovery'}
 Previous Context: ${JSON.stringify(context.project || {}, null, 2)}
 `;
 
-        const rolePrompts = {
-            visionary_strategist: `${baseContext}
+    const rolePrompts = {
+      visionary_strategist: `${baseContext}
 
 You are the Visionary Strategist for FlashFusion. Your role is to:
 1. Define the strategic vision and market positioning
@@ -228,7 +228,7 @@ Provide a structured response with:
 - Market Analysis
 - Recommended Next Steps`,
 
-            product_manager: `${baseContext}
+      product_manager: `${baseContext}
 
 You are the Product Manager for FlashFusion. Your role is to:
 1. Break down requirements into user stories
@@ -242,7 +242,7 @@ Provide a structured response with:
 - Stakeholder Communication Plan
 - Risk Assessment`,
 
-            ux_designer: `${baseContext}
+      ux_designer: `${baseContext}
 
 You are the UX Designer for FlashFusion. Your role is to:
 1. Research user needs and pain points
@@ -257,7 +257,7 @@ Provide a structured response with:
 - Wireframe Specifications
 - Usability Testing Plan`,
 
-            ui_designer: `${baseContext}
+      ui_designer: `${baseContext}
 
 You are the UI Designer for FlashFusion. Your role is to:
 1. Create visual design language and style guide
@@ -272,7 +272,7 @@ Provide a structured response with:
 - Accessibility Guidelines
 - Brand Implementation Guide`,
 
-            mobile_developer: `${baseContext}
+      mobile_developer: `${baseContext}
 
 You are the Mobile Developer for FlashFusion. Your role is to:
 1. Design mobile app architecture
@@ -287,7 +287,7 @@ Provide a structured response with:
 - Performance Optimization Strategy
 - Development Timeline`,
 
-            backend_developer: `${baseContext}
+      backend_developer: `${baseContext}
 
 You are the Backend Developer for FlashFusion. Your role is to:
 1. Design API architecture and endpoints
@@ -302,7 +302,7 @@ Provide a structured response with:
 - Integration with FlashFusion Services
 - Scalability Strategy`,
 
-            qa_engineer: `${baseContext}
+      qa_engineer: `${baseContext}
 
 You are the QA Engineer for FlashFusion. Your role is to:
 1. Create comprehensive test strategy
@@ -317,7 +317,7 @@ Provide a structured response with:
 - Performance Testing Approach
 - Quality Metrics and KPIs`,
 
-            devops_engineer: `${baseContext}
+      devops_engineer: `${baseContext}
 
 You are the DevOps Engineer for FlashFusion. Your role is to:
 1. Design CI/CD pipeline
@@ -332,7 +332,7 @@ Provide a structured response with:
 - Monitoring and Alerting Plan
 - Security and Compliance Measures`,
 
-            security_analyst: `${baseContext}
+      security_analyst: `${baseContext}
 
 You are the Security Analyst for FlashFusion. Your role is to:
 1. Conduct security risk assessment
@@ -347,7 +347,7 @@ Provide a structured response with:
 - Compliance Checklist
 - Security Testing Plan`,
 
-            marketing_growth: `${baseContext}
+      marketing_growth: `${baseContext}
 
 You are the Marketing & Growth Strategist for FlashFusion. Your role is to:
 1. Define go-to-market strategy
@@ -362,7 +362,7 @@ Provide a structured response with:
 - Content Strategy
 - Campaign Execution Plan`,
 
-            business_analyst: `${baseContext}
+      business_analyst: `${baseContext}
 
 You are the Business Analyst for FlashFusion. Your role is to:
 1. Analyze business requirements and feasibility
@@ -375,103 +375,103 @@ Provide a structured response with:
 - Process Flow Diagrams
 - ROI Analysis and Business Case
 - Stakeholder Analysis
-- Risk Assessment Matrix`
-        };
+- Risk Assessment Matrix`,
+    };
 
-        return (
-            rolePrompts[agent.role] ||
+    return (
+      rolePrompts[agent.role] ||
       `You are a ${agent.role.replace(
-          '_',
-          ' '
+        '_',
+        ' '
       )} for FlashFusion. Handle this request: ${request.description}`
-        );
+    );
+  }
+
+  async getDashboard() {
+    const aiHealth = await SecureAIService.healthCheck();
+
+    return {
+      system: {
+        status: this.isInitialized ? 'operational' : 'initializing',
+        ai_services: aiHealth,
+        active_workflows: this.activeWorkflows.size,
+        timestamp: Date.now(),
+      },
+      performance: await this.monitor.getDashboardData(),
+      workflows: await this.getActiveWorkflows(),
+      agents: this.getAgentStatus(),
+    };
+  }
+
+  async getActiveWorkflows() {
+    const workflows = [];
+    for (const [projectId] of this.workflow.activeWorkflows) {
+      try {
+        const status = await this.workflow.getWorkflowStatus(projectId);
+        workflows.push(status);
+      } catch (error) {
+        console.error(`Error getting workflow status for ${projectId}:`, error);
+      }
     }
+    return workflows;
+  }
 
-    async getDashboard() {
-        const aiHealth = await SecureAIService.healthCheck();
+  getAgentStatus() {
+    const roles = Object.keys(this.roleSelector.roleCapabilities);
+    return {
+      total: roles.length,
+      available: roles.length, // All agents are AI-powered, so always available
+      roles: roles.map(role => ({
+        name: role,
+        status: 'ready',
+        capabilities: this.roleSelector.roleCapabilities[role].capabilities,
+        priority: this.roleSelector.roleCapabilities[role].priority,
+      })),
+    };
+  }
 
-        return {
-            system: {
-                status: this.isInitialized ? 'operational' : 'initializing',
-                ai_services: aiHealth,
-                active_workflows: this.activeWorkflows.size,
-                timestamp: Date.now()
-            },
-            performance: await this.monitor.getDashboardData(),
-            workflows: await this.getActiveWorkflows(),
-            agents: this.getAgentStatus()
-        };
-    }
+  async handleHandoffCompleted(handoffData) {
+    console.log('✅ Handoff completed:', handoffData.id);
+    await this.monitor.recordMetric('handoff_completion', 1, {
+      from: handoffData.from,
+      to: handoffData.to,
+      status: 'success',
+    });
+  }
 
-    async getActiveWorkflows() {
-        const workflows = [];
-        for (const [projectId] of this.workflow.activeWorkflows) {
-            try {
-                const status = await this.workflow.getWorkflowStatus(projectId);
-                workflows.push(status);
-            } catch (error) {
-                console.error(`Error getting workflow status for ${projectId}:`, error);
-            }
-        }
-        return workflows;
-    }
+  async handleHandoffTimeout(handoffData) {
+    console.error('⏰ Handoff timeout:', handoffData.id);
+    await this.monitor.recordMetric('handoff_timeout', 1, {
+      from: handoffData.from,
+      to: handoffData.to,
+    });
+  }
 
-    getAgentStatus() {
-        const roles = Object.keys(this.roleSelector.roleCapabilities);
-        return {
-            total: roles.length,
-            available: roles.length, // All agents are AI-powered, so always available
-            roles: roles.map((role) => ({
-                name: role,
-                status: 'ready',
-                capabilities: this.roleSelector.roleCapabilities[role].capabilities,
-                priority: this.roleSelector.roleCapabilities[role].priority
-            }))
-        };
-    }
+  async handleMonitorAlert(alert) {
+    console.warn('🚨 Monitor alert:', alert);
+    this.emit('alert', alert);
+  }
 
-    async handleHandoffCompleted(handoffData) {
-        console.log('✅ Handoff completed:', handoffData.id);
-        await this.monitor.recordMetric('handoff_completion', 1, {
-            from: handoffData.from,
-            to: handoffData.to,
-            status: 'success'
-        });
-    }
+  // Quick start method for FlashFusion integration
+  async quickStart(projectDescription, options = {}) {
+    const projectId = options.projectId || `ff-${Date.now()}`;
 
-    async handleHandoffTimeout(handoffData) {
-        console.error('⏰ Handoff timeout:', handoffData.id);
-        await this.monitor.recordMetric('handoff_timeout', 1, {
-            from: handoffData.from,
-            to: handoffData.to
-        });
-    }
+    const request = {
+      projectId,
+      description: projectDescription,
+      priority: options.priority || 5,
+      context: {
+        platform: options.platform || 'web',
+        target_audience: options.targetAudience || 'general',
+        budget: options.budget || 'medium',
+        timeline: options.timeline || 'standard',
+        ...options.context,
+      },
+    };
 
-    async handleMonitorAlert(alert) {
-        console.warn('🚨 Monitor alert:', alert);
-        this.emit('alert', alert);
-    }
-
-    // Quick start method for FlashFusion integration
-    async quickStart(projectDescription, options = {}) {
-        const projectId = options.projectId || `ff-${Date.now()}`;
-
-        const request = {
-            projectId,
-            description: projectDescription,
-            priority: options.priority || 5,
-            context: {
-                platform: options.platform || 'web',
-                target_audience: options.targetAudience || 'general',
-                budget: options.budget || 'medium',
-                timeline: options.timeline || 'standard',
-                ...options.context
-            }
-        };
-
-        console.log(`🚀 FlashFusion Quick Start: ${projectDescription}`);
-        return await this.processProductRequest(request);
-    }
+    console.log(`🚀 FlashFusion Quick Start: ${projectDescription}`);
+    return await this.processProductRequest(request);
+  }
 }
 
 module.exports = DigitalProductOrchestrator;

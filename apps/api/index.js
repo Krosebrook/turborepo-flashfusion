@@ -5,54 +5,56 @@
  */
 
 module.exports = (req, res) => {
-    try {
-        // Set CORS headers (never fails)
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  try {
+    // Set CORS headers (never fails)
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-        if (req.method === 'OPTIONS') {
-            return res.status(200).end();
-        }
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
 
-        const url = req.url || '/';
-        const method = req.method || 'GET';
-        
-        // Log request for debugging
-        console.log('API Index Request:', { url, method, path: req.path });
+    const url = req.url || '/';
+    const method = req.method || 'GET';
 
-        // Health check
-        if (url === '/health' || url === '/api/health') {
-            return res.status(200).json({
-                status: 'healthy',
-                timestamp: new Date().toISOString(),
-                message: 'FlashFusion operational',
-                logger: 'none (bulletproof mode)'
-            });
-        }
+    // Log request for debugging
+    console.log('API Index Request:', { url, method, path: req.path });
 
-        // API status
-        if (url === '/api/status' || url === '/status') {
-            return res.status(200).json({
-                success: true,
-                platform: 'FlashFusion',
-                version: '2.0.0-bulletproof',
-                environment: 'vercel',
-                timestamp: new Date().toISOString()
-            });
-        }
+    // Health check
+    if (url === '/health' || url === '/api/health') {
+      return res.status(200).json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        message: 'FlashFusion operational',
+        logger: 'none (bulletproof mode)',
+      });
+    }
 
-        // Root page - Full FlashFusion Dashboard
-        // Show dashboard for root, /api/bulletproof, and /api/index
-        const showDashboard = url === '/' || url === '' || 
-                             url === '/api/bulletproof' || 
-                             url === '/api/index' ||
-                             url === '/api' ||
-                             !url.startsWith('/api/webhooks');
-        
-        if (showDashboard && !url.includes('/health') && !url.includes('/status')) {
-            res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            return res.status(200).send(`<!DOCTYPE html>
+    // API status
+    if (url === '/api/status' || url === '/status') {
+      return res.status(200).json({
+        success: true,
+        platform: 'FlashFusion',
+        version: '2.0.0-bulletproof',
+        environment: 'vercel',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // Root page - Full FlashFusion Dashboard
+    // Show dashboard for root, /api/bulletproof, and /api/index
+    const showDashboard =
+      url === '/' ||
+      url === '' ||
+      url === '/api/bulletproof' ||
+      url === '/api/index' ||
+      url === '/api' ||
+      !url.startsWith('/api/webhooks');
+
+    if (showDashboard && !url.includes('/health') && !url.includes('/status')) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.status(200).send(`<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -517,22 +519,20 @@ Last Updated: ${new Date().toISOString()}
     <script src="https://va.vercel-scripts.com/v1/speed-insights.js" async></script>
 </body>
 </html>`);
-        }
-
-
-    } catch (error) {
-        // Even if something impossible happens, never crash
-        console.error('Error:', error.message);
-        
-        try {
-            return res.status(500).json({
-                error: 'Server error',
-                timestamp: new Date().toISOString(),
-                bulletproof: true
-            });
-        } catch {
-            // Absolute last resort
-            res.end('{"error":"server error","bulletproof":true}');
-        }
     }
+  } catch (error) {
+    // Even if something impossible happens, never crash
+    console.error('Error:', error.message);
+
+    try {
+      return res.status(500).json({
+        error: 'Server error',
+        timestamp: new Date().toISOString(),
+        bulletproof: true,
+      });
+    } catch {
+      // Absolute last resort
+      res.end('{"error":"server error","bulletproof":true}');
+    }
+  }
 };

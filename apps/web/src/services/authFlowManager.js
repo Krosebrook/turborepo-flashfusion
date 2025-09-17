@@ -36,7 +36,7 @@ export class AuthFlowManager {
           ip_address: ipAddress,
           user_agent: userAgent,
           device_fingerprint: deviceFingerprint,
-          is_active: true
+          is_active: true,
         })
         .select()
         .single();
@@ -48,7 +48,7 @@ export class AuthFlowManager {
         refreshToken,
         expiresAt: expiresAt.getTime(),
         refreshExpiresAt: refreshExpiresAt.getTime(),
-        sessionId: data.id
+        sessionId: data.id,
       };
     } catch (error) {
       console.error('Failed to create session:', error);
@@ -90,7 +90,7 @@ export class AuthFlowManager {
       return {
         userId: data.user_id,
         sessionId: data.id,
-        expiresAt: expiresAt.getTime()
+        expiresAt: expiresAt.getTime(),
       };
     } catch (error) {
       console.error('Session validation failed:', error);
@@ -126,7 +126,7 @@ export class AuthFlowManager {
           session_token: newSessionToken,
           refresh_token: newRefreshToken,
           expires_at: newExpiresAt.toISOString(),
-          last_accessed: new Date().toISOString()
+          last_accessed: new Date().toISOString(),
         })
         .eq('id', data.id);
 
@@ -136,7 +136,7 @@ export class AuthFlowManager {
         sessionToken: newSessionToken,
         refreshToken: newRefreshToken,
         expiresAt: newExpiresAt.getTime(),
-        userId: data.user_id
+        userId: data.user_id,
       };
     } catch (error) {
       console.error('Session refresh failed:', error);
@@ -163,10 +163,12 @@ export class AuthFlowManager {
    */
   async cleanupExpiredSessions() {
     try {
-      const { data, error } = await supabaseAdmin.rpc('cleanup_expired_sessions');
-      
+      const { data, error } = await supabaseAdmin.rpc(
+        'cleanup_expired_sessions'
+      );
+
       if (error) throw error;
-      
+
       console.log(`Cleaned up ${data} expired sessions`);
       return data;
     } catch (error) {
@@ -189,25 +191,28 @@ export class AuthFlowManager {
         ...additionalData
       } = providerData;
 
-      const expiresAt = expires_in 
-        ? new Date(Date.now() + (expires_in * 1000))
+      const expiresAt = expires_in
+        ? new Date(Date.now() + expires_in * 1000)
         : null;
 
       const { data, error } = await supabaseAdmin
         .from(this.oauthTable)
-        .upsert({
-          user_id: userId,
-          provider: provider,
-          provider_user_id: provider_user_id,
-          access_token: access_token,
-          refresh_token: refresh_token,
-          token_expires_at: expiresAt?.toISOString(),
-          scope: scope ? scope.split(' ') : [],
-          provider_data: additionalData,
-          is_active: true
-        }, {
-          onConflict: 'user_id,provider,provider_user_id'
-        })
+        .upsert(
+          {
+            user_id: userId,
+            provider: provider,
+            provider_user_id: provider_user_id,
+            access_token: access_token,
+            refresh_token: refresh_token,
+            token_expires_at: expiresAt?.toISOString(),
+            scope: scope ? scope.split(' ') : [],
+            provider_data: additionalData,
+            is_active: true,
+          },
+          {
+            onConflict: 'user_id,provider,provider_user_id',
+          }
+        )
         .select()
         .single();
 
@@ -248,9 +253,9 @@ export class AuthFlowManager {
   async refreshOAuthToken(userId, provider, newTokenData) {
     try {
       const { access_token, refresh_token, expires_in } = newTokenData;
-      
-      const expiresAt = expires_in 
-        ? new Date(Date.now() + (expires_in * 1000))
+
+      const expiresAt = expires_in
+        ? new Date(Date.now() + expires_in * 1000)
         : null;
 
       const result = await supabaseAdmin.rpc('rotate_oauth_token', {
@@ -258,7 +263,7 @@ export class AuthFlowManager {
         p_provider: provider,
         p_new_access_token: access_token,
         p_new_refresh_token: refresh_token,
-        p_expires_at: expiresAt?.toISOString()
+        p_expires_at: expiresAt?.toISOString(),
       });
 
       return result.data;
@@ -301,7 +306,7 @@ export class AuthFlowManager {
       userAgent,
       ipAddress,
       timestamp: Date.now(),
-      ...additionalData
+      ...additionalData,
     };
 
     return crypto
@@ -360,22 +365,22 @@ export class OAuthProviderManager {
         tokenUrl: 'https://accounts.shopify.com/oauth/token',
         scope: 'read_products,write_products,read_orders,write_orders',
         clientId: process.env.SHOPIFY_CLIENT_ID,
-        clientSecret: process.env.SHOPIFY_CLIENT_SECRET
+        clientSecret: process.env.SHOPIFY_CLIENT_SECRET,
       },
       github: {
         authUrl: 'https://github.com/login/oauth/authorize',
         tokenUrl: 'https://github.com/login/oauth/access_token',
         scope: 'repo,user',
         clientId: process.env.GITHUB_CLIENT_ID,
-        clientSecret: process.env.GITHUB_CLIENT_SECRET
+        clientSecret: process.env.GITHUB_CLIENT_SECRET,
       },
       google: {
         authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
         tokenUrl: 'https://oauth2.googleapis.com/token',
         scope: 'profile email',
         clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET
-      }
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      },
     };
   }
 
@@ -391,7 +396,7 @@ export class OAuthProviderManager {
       redirect_uri: redirectUri,
       scope: config.scope,
       state: state,
-      response_type: 'code'
+      response_type: 'code',
     });
 
     return `${config.authUrl}?${params.toString()}`;
@@ -408,16 +413,16 @@ export class OAuthProviderManager {
       const response = await fetch(config.tokenUrl, {
         method: 'POST',
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded'
+          Accept: 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
           client_id: config.clientId,
           client_secret: config.clientSecret,
           code: code,
           redirect_uri: redirectUri,
-          grant_type: 'authorization_code'
-        })
+          grant_type: 'authorization_code',
+        }),
       });
 
       if (!response.ok) {
@@ -442,15 +447,15 @@ export class OAuthProviderManager {
       const response = await fetch(config.tokenUrl, {
         method: 'POST',
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded'
+          Accept: 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
           client_id: config.clientId,
           client_secret: config.clientSecret,
           refresh_token: refreshToken,
-          grant_type: 'refresh_token'
-        })
+          grant_type: 'refresh_token',
+        }),
       });
 
       if (!response.ok) {

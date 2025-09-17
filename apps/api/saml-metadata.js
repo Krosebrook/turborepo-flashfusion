@@ -8,7 +8,7 @@ export default function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const baseUrl = process.env.VERCEL_URL 
+  const baseUrl = process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
     : 'https://flashfusion.ai';
 

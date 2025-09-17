@@ -112,23 +112,32 @@ export class ImageGenerationClient {
     this.authToken = authToken;
   }
 
-  async generateImage(request: ImageGenerationRequest): Promise<ImageGenerationResponse> {
-    const response = await fetch(`${this.baseUrl}/functions/v1/generate-image`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.authToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    });
+  async generateImage(
+    request: ImageGenerationRequest
+  ): Promise<ImageGenerationResponse> {
+    const response = await fetch(
+      `${this.baseUrl}/functions/v1/generate-image`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.authToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(request),
+      }
+    );
 
     const data = await response.json();
-    
+
     if (!response.ok) {
-      const error = new Error(data.error || 'Image generation failed') as APIError;
+      const error = new Error(
+        data.error || 'Image generation failed'
+      ) as APIError;
       error.status = response.status;
       error.code = data.errorCode;
-      error.retryAfter = data.retryAfter ? parseInt(data.retryAfter) : undefined;
+      error.retryAfter = data.retryAfter
+        ? parseInt(data.retryAfter)
+        : undefined;
       throw error;
     }
 
@@ -136,15 +145,18 @@ export class ImageGenerationClient {
   }
 
   async getGenerationStats(): Promise<GenerationStats> {
-    const response = await fetch(`${this.baseUrl}/rest/v1/rpc/get_user_generation_stats`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.authToken}`,
-        'Content-Type': 'application/json',
-        'apikey': this.authToken,
-      },
-      body: JSON.stringify({ user_uuid: 'auth.uid()' }),
-    });
+    const response = await fetch(
+      `${this.baseUrl}/rest/v1/rpc/get_user_generation_stats`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.authToken}`,
+          'Content-Type': 'application/json',
+          apikey: this.authToken,
+        },
+        body: JSON.stringify({ user_uuid: 'auth.uid()' }),
+      }
+    );
 
     if (!response.ok) {
       throw new Error('Failed to fetch generation stats');
@@ -154,12 +166,15 @@ export class ImageGenerationClient {
   }
 
   async getRateLimitInfo(): Promise<RateLimitInfo> {
-    const response = await fetch(`${this.baseUrl}/rest/v1/api_rate_limits?select=*&endpoint=eq.generate-image`, {
-      headers: {
-        'Authorization': `Bearer ${this.authToken}`,
-        'apikey': this.authToken,
-      },
-    });
+    const response = await fetch(
+      `${this.baseUrl}/rest/v1/api_rate_limits?select=*&endpoint=eq.generate-image`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.authToken}`,
+          apikey: this.authToken,
+        },
+      }
+    );
 
     if (!response.ok) {
       throw new Error('Failed to fetch rate limit info');
@@ -167,7 +182,7 @@ export class ImageGenerationClient {
 
     const data = await response.json();
     const rateData = data[0];
-    
+
     return {
       limit: 50,
       remaining: Math.max(0, 50 - (rateData?.request_count || 0)),
@@ -179,52 +194,70 @@ export class ImageGenerationClient {
 // Utility functions
 export function validatePrompt(prompt: string): string[] {
   const errors: string[] = [];
-  
+
   if (!prompt || prompt.trim().length === 0) {
     errors.push('Prompt cannot be empty');
   }
-  
+
   if (prompt.length > 1000) {
     errors.push('Prompt cannot exceed 1000 characters');
   }
-  
+
   const blockedTerms = [
-    'nude', 'nsfw', 'explicit', 'pornographic', 'sexual',
-    'naked', 'erotic', 'adult', 'xxx', 'porn',
-    'violence', 'blood', 'gore', 'death', 'killing',
-    'hate', 'racist', 'terrorism', 'drugs', 'illegal'
+    'nude',
+    'nsfw',
+    'explicit',
+    'pornographic',
+    'sexual',
+    'naked',
+    'erotic',
+    'adult',
+    'xxx',
+    'porn',
+    'violence',
+    'blood',
+    'gore',
+    'death',
+    'killing',
+    'hate',
+    'racist',
+    'terrorism',
+    'drugs',
+    'illegal',
   ];
-  
+
   const lowerPrompt = prompt.toLowerCase();
-  const violatingTerms = blockedTerms.filter(term => lowerPrompt.includes(term));
-  
+  const violatingTerms = blockedTerms.filter(term =>
+    lowerPrompt.includes(term)
+  );
+
   if (violatingTerms.length > 0) {
     errors.push(`Content policy violation: ${violatingTerms.join(', ')}`);
   }
-  
+
   return errors;
 }
 
 export function validateDimensions(width: number, height: number): string[] {
   const errors: string[] = [];
-  
+
   if (width < 256 || width > 2048) {
     errors.push('Width must be between 256 and 2048 pixels');
   }
-  
+
   if (height < 256 || height > 2048) {
     errors.push('Height must be between 256 and 2048 pixels');
   }
-  
+
   // Ensure dimensions are multiples of 8 for optimal generation
   if (width % 8 !== 0) {
     errors.push('Width should be a multiple of 8');
   }
-  
+
   if (height % 8 !== 0) {
     errors.push('Height should be a multiple of 8');
   }
-  
+
   return errors;
 }
 
@@ -232,11 +265,11 @@ export function estimateCost(request: ImageGenerationRequest): number {
   const basePixels = 1024 * 1024; // 1 megapixel baseline
   const actualPixels = (request.width || 1024) * (request.height || 1024);
   const pixelMultiplier = actualPixels / basePixels;
-  
+
   const stepMultiplier = (request.steps || 4) / 4; // 4 steps baseline
   const resultMultiplier = request.numberResults || 1;
-  
+
   const baseCost = 0.01; // Base cost per image
-  
+
   return baseCost * pixelMultiplier * stepMultiplier * resultMultiplier;
 }

@@ -1,11 +1,11 @@
 import { useState, useCallback, useRef } from 'react';
-import { 
-  ImageGenerationRequest, 
-  ImageGenerationResponse, 
+import {
+  ImageGenerationRequest,
+  ImageGenerationResponse,
   ImageGenerationClient,
   GenerationStats,
   RateLimitInfo,
-  APIError
+  APIError,
 } from '../types/imageGeneration';
 
 interface UseImageGenerationState {
@@ -40,81 +40,89 @@ export function useImageGeneration(options: UseImageGenerationOptions) {
 
   // Initialize client
   if (!clientRef.current && options.authToken) {
-    clientRef.current = new ImageGenerationClient(options.baseUrl, options.authToken);
+    clientRef.current = new ImageGenerationClient(
+      options.baseUrl,
+      options.authToken
+    );
   }
 
   // Update client when auth token changes
   if (clientRef.current && options.authToken) {
-    clientRef.current = new ImageGenerationClient(options.baseUrl, options.authToken);
+    clientRef.current = new ImageGenerationClient(
+      options.baseUrl,
+      options.authToken
+    );
   }
 
-  const generateImage = useCallback(async (request: ImageGenerationRequest) => {
-    if (!clientRef.current) {
-      throw new Error('Client not initialized');
-    }
+  const generateImage = useCallback(
+    async (request: ImageGenerationRequest) => {
+      if (!clientRef.current) {
+        throw new Error('Client not initialized');
+      }
 
-    // Cancel any ongoing generation
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+      // Cancel any ongoing generation
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
 
-    abortControllerRef.current = new AbortController();
+      abortControllerRef.current = new AbortController();
 
-    setState(prev => ({
-      ...prev,
-      isGenerating: true,
-      progress: 0,
-      error: null,
-      result: null,
-    }));
+      setState(prev => ({
+        ...prev,
+        isGenerating: true,
+        progress: 0,
+        error: null,
+        result: null,
+      }));
 
-    try {
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
+      try {
+        // Simulate progress updates
+        const progressInterval = setInterval(() => {
+          setState(prev => ({
+            ...prev,
+            progress: Math.min(prev.progress + Math.random() * 20, 90),
+          }));
+
+          if (options.onProgress) {
+            options.onProgress(state.progress);
+          }
+        }, 1000);
+
+        const result = await clientRef.current.generateImage(request);
+
+        clearInterval(progressInterval);
+
         setState(prev => ({
           ...prev,
-          progress: Math.min(prev.progress + Math.random() * 20, 90),
+          isGenerating: false,
+          progress: 100,
+          result,
         }));
-        
-        if (options.onProgress) {
-          options.onProgress(state.progress);
+
+        if (options.onSuccess) {
+          options.onSuccess(result);
         }
-      }, 1000);
 
-      const result = await clientRef.current.generateImage(request);
+        return result;
+      } catch (error) {
+        const apiError = error as APIError;
 
-      clearInterval(progressInterval);
+        setState(prev => ({
+          ...prev,
+          isGenerating: false,
+          progress: 0,
+          error: apiError.message,
+        }));
 
-      setState(prev => ({
-        ...prev,
-        isGenerating: false,
-        progress: 100,
-        result,
-      }));
+        if (options.onError) {
+          options.onError(apiError);
+        }
 
-      if (options.onSuccess) {
-        options.onSuccess(result);
+        throw apiError;
       }
-
-      return result;
-
-    } catch (error) {
-      const apiError = error as APIError;
-      
-      setState(prev => ({
-        ...prev,
-        isGenerating: false,
-        progress: 0,
-        error: apiError.message,
-      }));
-
-      if (options.onError) {
-        options.onError(apiError);
-      }
-
-      throw apiError;
-    }
-  }, [options, state.progress]);
+    },
+    [options, state.progress]
+  );
 
   const cancelGeneration = useCallback(() => {
     if (abortControllerRef.current) {
@@ -190,22 +198,27 @@ export function useImageGenerationForm() {
     cfgScale: 1,
   });
 
-  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string[]>
+  >({});
 
-  const updateField = useCallback(<K extends keyof ImageGenerationRequest>(
-    field: K,
-    value: ImageGenerationRequest[K]
-  ) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Clear validation errors for this field
-    if (validationErrors[field]) {
-      setValidationErrors(prev => {
-        const { [field]: _, ...rest } = prev;
-        return rest;
-      });
-    }
-  }, [validationErrors]);
+  const updateField = useCallback(
+    <K extends keyof ImageGenerationRequest>(
+      field: K,
+      value: ImageGenerationRequest[K]
+    ) => {
+      setFormData(prev => ({ ...prev, [field]: value }));
+
+      // Clear validation errors for this field
+      if (validationErrors[field]) {
+        setValidationErrors(prev => {
+          const { [field]: _, ...rest } = prev;
+          return rest;
+        });
+      }
+    },
+    [validationErrors]
+  );
 
   const validateForm = useCallback((): boolean => {
     const errors: Record<string, string[]> = {};
@@ -227,7 +240,10 @@ export function useImageGenerationForm() {
     }
 
     // Validate number of results
-    if (formData.numberResults && (formData.numberResults < 1 || formData.numberResults > 4)) {
+    if (
+      formData.numberResults &&
+      (formData.numberResults < 1 || formData.numberResults > 4)
+    ) {
       errors.numberResults = ['Number of results must be between 1 and 4'];
     }
 
@@ -237,7 +253,10 @@ export function useImageGenerationForm() {
     }
 
     // Validate CFG scale
-    if (formData.cfgScale && (formData.cfgScale < 0.1 || formData.cfgScale > 20)) {
+    if (
+      formData.cfgScale &&
+      (formData.cfgScale < 0.1 || formData.cfgScale > 20)
+    ) {
       errors.cfgScale = ['CFG Scale must be between 0.1 and 20'];
     }
 

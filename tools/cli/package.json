@@ -9,11 +9,16 @@
   "scripts": {
     "build": "echo 'No build needed for CLI'",
     "dev": "echo 'CLI tools ready for development'",
-    "lint": "echo 'Linting CLI tools'",
+    "lint": "eslint .",
+    "format": "prettier --write .",
     "type-check": "echo 'No TypeScript in CLI'"
   },
   "dependencies": {
     "chalk": "^4.1.2",
     "dotenv": "^16.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0"
   }
 }

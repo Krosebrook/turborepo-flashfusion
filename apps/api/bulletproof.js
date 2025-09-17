@@ -5,44 +5,44 @@
  */
 
 module.exports = (req, res) => {
-    try {
-        // Set CORS headers (never fails)
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  try {
+    // Set CORS headers (never fails)
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-        if (req.method === 'OPTIONS') {
-            return res.status(200).end();
-        }
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
 
-        const url = req.url || '/';
-        const method = req.method || 'GET';
+    const url = req.url || '/';
+    const method = req.method || 'GET';
 
-        // Health check
-        if (url === '/health' || url === '/api/health') {
-            return res.status(200).json({
-                status: 'healthy',
-                timestamp: new Date().toISOString(),
-                message: 'FlashFusion operational',
-                logger: 'none (bulletproof mode)'
-            });
-        }
+    // Health check
+    if (url === '/health' || url === '/api/health') {
+      return res.status(200).json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        message: 'FlashFusion operational',
+        logger: 'none (bulletproof mode)',
+      });
+    }
 
-        // API status
-        if (url === '/api/status' || url === '/status') {
-            return res.status(200).json({
-                success: true,
-                platform: 'FlashFusion',
-                version: '2.0.0-bulletproof',
-                environment: 'vercel',
-                timestamp: new Date().toISOString()
-            });
-        }
+    // API status
+    if (url === '/api/status' || url === '/status') {
+      return res.status(200).json({
+        success: true,
+        platform: 'FlashFusion',
+        version: '2.0.0-bulletproof',
+        environment: 'vercel',
+        timestamp: new Date().toISOString(),
+      });
+    }
 
-        // Root page - Full FlashFusion Dashboard
-        if (url === '/' || url === '') {
-            res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            return res.status(200).send(`<!DOCTYPE html>
+    // Root page - Full FlashFusion Dashboard
+    if (url === '/' || url === '') {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.status(200).send(`<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -507,40 +507,39 @@ Last Updated: ${new Date().toISOString()}
     <script src="https://va.vercel-scripts.com/v1/speed-insights.js" async></script>
 </body>
 </html>`);
-        }
+    }
 
-        // For unknown API routes, return JSON
-        if (url.startsWith('/api/')) {
-            return res.status(200).json({
-                message: 'FlashFusion API',
-                path: url,
-                method: method,
-                status: 'working',
-                timestamp: new Date().toISOString(),
-                deployment: 'bulletproof'
-            });
-        }
-        
-        // Otherwise show a redirect to root
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        return res.status(200).send(`<!DOCTYPE html>
+    // For unknown API routes, return JSON
+    if (url.startsWith('/api/')) {
+      return res.status(200).json({
+        message: 'FlashFusion API',
+        path: url,
+        method: method,
+        status: 'working',
+        timestamp: new Date().toISOString(),
+        deployment: 'bulletproof',
+      });
+    }
+
+    // Otherwise show a redirect to root
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.status(200).send(`<!DOCTYPE html>
 <html><head><title>FlashFusion</title></head>
 <body><script>window.location.href='/';</script></body>
 </html>`);
+  } catch (error) {
+    // Even if something impossible happens, never crash
+    console.error('Error:', error.message);
 
-    } catch (error) {
-        // Even if something impossible happens, never crash
-        console.error('Error:', error.message);
-        
-        try {
-            return res.status(500).json({
-                error: 'Server error',
-                timestamp: new Date().toISOString(),
-                bulletproof: true
-            });
-        } catch {
-            // Absolute last resort
-            res.end('{"error":"server error","bulletproof":true}');
-        }
+    try {
+      return res.status(500).json({
+        error: 'Server error',
+        timestamp: new Date().toISOString(),
+        bulletproof: true,
+      });
+    } catch {
+      // Absolute last resort
+      res.end('{"error":"server error","bulletproof":true}');
     }
+  }
 };

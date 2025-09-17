@@ -1,20 +1,24 @@
 // Ultra-simple Vercel function - no dependencies
 module.exports = (req, res) => {
-    if (req.url === '/health') {
-        return res.json({ status: 'ok', timestamp: new Date().toISOString() });
-    }
-    
-    if (req.url === '/api/status') {
-        return res.json({ success: true, message: 'API working' });
-    }
-    
-    if (req.url.includes('/api/zapier/incoming-webhook')) {
-        return res.json({ success: true, webhook: 'active', timestamp: new Date().toISOString() });
-    }
-    
-    // Default response
-    res.setHeader('Content-Type', 'text/html');
-    res.send(`
+  if (req.url === '/health') {
+    return res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  }
+
+  if (req.url === '/api/status') {
+    return res.json({ success: true, message: 'API working' });
+  }
+
+  if (req.url.includes('/api/zapier/incoming-webhook')) {
+    return res.json({
+      success: true,
+      webhook: 'active',
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  // Default response
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`
         <html>
         <head><title>FlashFusion - Online</title></head>
         <body style="font-family: Arial; background: #1a1a2e; color: white; padding: 2rem;">
@@ -29,4 +33,4 @@ module.exports = (req, res) => {
         </body>
         </html>
     `);
-};// Force deployment Thu, Jul 24, 2025  2:42:00 PM
+}; // Force deployment Thu, Jul 24, 2025  2:42:00 PM
