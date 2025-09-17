@@ -1,0 +1,207 @@
+name: Security Analysis
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  security-analysis:
+    name: Static Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run security analysis
+        run: |
+          echo "🔍 Running FlashFusion Security Analysis..."
+          npm run analyze:security -- --output security-report.json --format json || true
+          
+      - name: Generate HTML report
+        if: always()
+        run: |
+          npm run analyze:security -- --output security-report.html --format html || true
+          
+      - name: Parse security results
+        id: security-results
+        if: always()
+        run: |
+          if [ -f security-report.json ]; then
+            CRITICAL=$(jq '.stats.severityBreakdown.critical // 0' security-report.json)
+            HIGH=$(jq '.stats.severityBreakdown.high // 0' security-report.json)
+            MEDIUM=$(jq '.stats.severityBreakdown.medium // 0' security-report.json)
+            TOTAL_SECURITY=$(jq '.stats.securityIssues // 0' security-report.json)
+            
+            echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+            echo "high=$HIGH" >> $GITHUB_OUTPUT
+            echo "medium=$MEDIUM" >> $GITHUB_OUTPUT
+            echo "total_security=$TOTAL_SECURITY" >> $GITHUB_OUTPUT
+            
+            echo "## 🔍 Security Analysis Results" >> $GITHUB_STEP_SUMMARY
+            echo "- **Critical Issues:** $CRITICAL" >> $GITHUB_STEP_SUMMARY
+            echo "- **High Severity:** $HIGH" >> $GITHUB_STEP_SUMMARY
+            echo "- **Medium Severity:** $MEDIUM" >> $GITHUB_STEP_SUMMARY
+            echo "- **Total Security Issues:** $TOTAL_SECURITY" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No security report generated" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+      - name: Upload security reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-analysis-reports
+          path: |
+            security-report.json
+            security-report.html
+          retention-days: 30
+          
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            if (!fs.existsSync('security-report.json')) {
+              console.log('No security report found');
+              return;
+            }
+            
+            const report = JSON.parse(fs.readFileSync('security-report.json', 'utf8'));
+            const { stats } = report;
+            
+            const criticalIssues = stats.severityBreakdown.critical || 0;
+            const highIssues = stats.severityBreakdown.high || 0;
+            const mediumIssues = stats.severityBreakdown.medium || 0;
+            const totalSecurity = stats.securityIssues || 0;
+            
+            let emoji = '✅';
+            let status = 'PASSED';
+            
+            if (criticalIssues > 0) {
+              emoji = '🚨';
+              status = 'CRITICAL ISSUES FOUND';
+            } else if (highIssues > 0) {
+              emoji = '⚠️';
+              status = 'HIGH SEVERITY ISSUES FOUND';
+            } else if (mediumIssues > 0) {
+              emoji = '📋';
+              status = 'MEDIUM SEVERITY ISSUES FOUND';
+            }
+            
+            const body = `## ${emoji} FlashFusion Security Analysis - ${status}
+            
+            ### Summary
+            - **Files Scanned:** ${stats.filesScanned}
+            - **Total Security Issues:** ${totalSecurity}
+            - **Scan Duration:** ${report.duration}ms
+            
+            ### Severity Breakdown
+            - 🚨 **Critical:** ${criticalIssues}
+            - ⚠️ **High:** ${highIssues}
+            - 📋 **Medium:** ${mediumIssues}
+            - ℹ️ **Low:** ${stats.severityBreakdown.low || 0}
+            
+            ${criticalIssues > 0 || highIssues > 0 ? 
+              '### ⚠️ Action Required\nThis PR introduces security issues that should be addressed before merging.' : 
+              '### ✅ No Critical Issues\nNo critical or high severity security issues found.'
+            }
+            
+            📄 [View detailed HTML report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+            
+      - name: Fail on critical security issues
+        if: steps.security-results.outputs.critical > 0
+        run: |
+          echo "❌ Critical security issues found! Failing the build."
+          echo "Critical issues: ${{ steps.security-results.outputs.critical }}"
+          exit 1
+          
+      - name: Create security issue
+        if: steps.security-results.outputs.critical > 0 && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const criticalCount = ${{ steps.security-results.outputs.critical }};
+            const highCount = ${{ steps.security-results.outputs.high }};
+            
+            if (criticalCount > 0) {
+              const body = `## 🚨 Critical Security Issues Detected
+              
+              The automated security scan has detected **${criticalCount} critical** and **${highCount} high** severity security issues in the main branch.
+              
+              ### Immediate Action Required
+              1. Review the security analysis report
+              2. Address critical vulnerabilities immediately
+              3. Verify fixes with re-scanning
+              
+              ### Analysis Details
+              - **Scan Date:** ${new Date().toISOString()}
+              - **Critical Issues:** ${criticalCount}
+              - **High Severity Issues:** ${highCount}
+              - **Workflow Run:** ${{ github.run_id }}
+              
+              📄 [View Analysis Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+              `;
+              
+              github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `🚨 Critical Security Issues Detected - ${new Date().toDateString()}`,
+                body: body,
+                labels: ['security', 'critical', 'automated']
+              });
+            }
+
+  quality-analysis:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run quality analysis
+        run: |
+          echo "🎯 Running FlashFusion Quality Analysis..."
+          npm run analyze:quality -- --output quality-report.json --format json || true
+          
+      - name: Upload quality report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-analysis-report
+          path: quality-report.json
+          retention-days: 30
