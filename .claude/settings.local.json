@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod:*)",
+      "Bash(cmd.exe /c \"echo Testing PowerShell...\")",
+      "Bash(gh repo list:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
