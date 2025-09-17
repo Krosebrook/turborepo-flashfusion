@@ -1,0 +1,79 @@
+# Policy validation rules for FlashFusion infrastructure
+# This file defines policies that infrastructure changes must comply with
+
+apiVersion: v1
+kind: Policy
+metadata:
+  name: flashfusion-infrastructure-policies
+  description: "Security and compliance policies for FlashFusion infrastructure"
+
+policies:
+  # Security policies
+  security:
+    - name: "require-encryption-at-rest"
+      description: "All data stores must have encryption at rest enabled"
+      rule: |
+        resources[_].type == "aws_s3_bucket"
+        resources[_].attributes.server_side_encryption_configuration
+      
+    - name: "no-public-access"
+      description: "Prevent public access to sensitive resources"
+      rule: |
+        resources[_].type == "aws_s3_bucket"
+        not resources[_].attributes.acl == "public-read"
+        not resources[_].attributes.acl == "public-read-write"
+      
+    - name: "require-vpc-security-groups"
+      description: "All EC2 instances must be in VPC with security groups"
+      rule: |
+        resources[_].type == "aws_instance"
+        resources[_].attributes.vpc_security_group_ids
+
+  # Compliance policies  
+  compliance:
+    - name: "required-tags"
+      description: "All resources must have required tags"
+      required_tags:
+        - "Project"
+        - "Environment" 
+        - "ManagedBy"
+      rule: |
+        resources[_].tags.Project
+        resources[_].tags.Environment
+        resources[_].tags.ManagedBy
+
+    - name: "naming-convention"
+      description: "Resources must follow naming conventions"
+      pattern: "^(flashfusion|ff)-(dev|staging|prod)-[a-z0-9-]+$"
+      applies_to:
+        - "aws_vpc"
+        - "aws_subnet"
+        - "aws_security_group"
+
+  # Cost optimization
+  cost:
+    - name: "instance-size-limits"
+      description: "Limit instance sizes to control costs"
+      allowed_instance_types:
+        dev: ["t3.micro", "t3.small", "t3.medium"]
+        staging: ["t3.small", "t3.medium", "t3.large"]
+        prod: ["t3.medium", "t3.large", "t3.xlarge", "m5.large", "m5.xlarge"]
+
+    - name: "require-termination-protection"
+      description: "Production resources must have termination protection"
+      rule: |
+        var.environment == "prod"
+        resources[_].attributes.deletion_protection == true
+
+# Validation settings
+validation:
+  strict_mode: false  # Set to true for strict policy enforcement
+  fail_on_warnings: false
+  generate_report: true
+  
+# Exemptions (use sparingly)
+exemptions:
+  - resource_pattern: "aws_s3_bucket.logs*"
+    policy: "require-encryption-at-rest"
+    reason: "Log buckets handle encryption differently"
+    expires: "2024-12-31"

@@ -1,0 +1,19 @@
+{
+  "lastOperation": "validate",
+  "status": "failed",
+  "timestamp": "2025-09-17T10:24:58.606Z",
+  "details": {
+    "terraform": {
+      "valid": false,
+      "error": "Command failed: terraform version\n/bin/sh: 1: terraform: not found\n"
+    },
+    "cdk": {
+      "valid": false,
+      "error": "Command failed: cdk version\n/bin/sh: 1: cdk: not found\n"
+    },
+    "policies": {
+      "skipped": true,
+      "reason": "no_policies"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@flashfusion/infrastructure-pipeline",
+  "version": "1.0.0",
+  "description": "Infrastructure Pipeline Agent for running IaC tools with validation",
+  "main": "pipeline-agent.js",
+  "type": "module",
+  "scripts": {
+    "plan": "node pipeline-agent.js plan",
+    "apply": "node pipeline-agent.js apply",
+    "validate": "node pipeline-agent.js validate",
+    "drift": "node pipeline-agent.js drift",
+    "test": "echo 'Infrastructure pipeline tests not yet implemented'"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "js-yaml": "^4.1.0"
+  },
+  "keywords": [
+    "infrastructure",
+    "terraform",
+    "cdk",
+    "iac",
+    "pipeline"
+  ],
+  "author": "FlashFusion Team",
+  "license": "MIT"
+}

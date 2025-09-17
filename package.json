@@ -12,7 +12,14 @@
     "restore-state": "node restore-session.js",
     "next-steps": "node restore-session.js",
     "deploy": "vercel --prod",
-    "ff": "node tools/cli/ff-cli.js"
+    "ff": "node tools/cli/ff-cli.js",
+    "infra:validate": "node tools/infrastructure/pipeline-agent.js validate",
+    "infra:plan": "node tools/infrastructure/pipeline-agent.js plan",
+    "infra:apply": "node tools/infrastructure/pipeline-agent.js apply",
+    "infra:drift": "node tools/infrastructure/pipeline-agent.js drift",
+    "infra:status": "node tools/infrastructure/pipeline-agent.js status",
+    "infra:terraform": "tools/infrastructure/terraform-pipeline.sh",
+    "infra:cdk": "tools/infrastructure/cdk-pipeline.sh"
   },
   "devDependencies": {
     "turbo": "^2.3.0",

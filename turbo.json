@@ -25,6 +25,22 @@
     },
     "clean": {
       "cache": false
+    },
+    "infra:validate": {
+      "cache": false,
+      "outputs": ["tools/infrastructure/pipeline.log"]
+    },
+    "infra:plan": {
+      "cache": false,
+      "outputs": ["tools/infrastructure/pipeline.log", "**/*.tfplan"]
+    },
+    "infra:apply": {
+      "cache": false,
+      "outputs": ["tools/infrastructure/pipeline.log"]
+    },
+    "infra:drift": {
+      "cache": false,
+      "outputs": ["tools/infrastructure/pipeline.log"]
     }
   },
   "globalDependencies": [
