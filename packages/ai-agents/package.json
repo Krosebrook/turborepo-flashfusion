@@ -6,6 +6,10 @@
   "scripts": {
     "build": "echo 'No build needed for AI agents'",
     "dev": "echo 'AI agents ready for development'",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "echo 'Linting AI agents'",
     "type-check": "echo 'Type checking AI agents'"
   },
@@ -15,6 +19,7 @@
     "openai": "^4.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
   }
 }
