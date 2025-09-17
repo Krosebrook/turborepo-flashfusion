@@ -12,7 +12,9 @@
     "restore-state": "node restore-session.js",
     "next-steps": "node restore-session.js",
     "deploy": "vercel --prod",
-    "ff": "node tools/cli/ff-cli.js"
+    "ff": "node tools/cli/ff-cli.js",
+    "prepare": "husky install || true",
+    "commit-check": "node ./scripts/check-commit-size.js"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",

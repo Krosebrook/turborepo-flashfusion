@@ -3,7 +3,12 @@
     "allow": [
       "Bash(chmod:*)",
       "Bash(cmd.exe /c \"echo Testing PowerShell...\")",
-      "Bash(gh repo list:*)"
+      "Bash(gh repo list:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh repo clone:*)",
+      "Bash(npm run prepare:*)",
+      "Bash(npm install)"
     ],
     "deny": [],
     "ask": []
