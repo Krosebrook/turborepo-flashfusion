@@ -1,0 +1,20 @@
+{
+  "name": "@flashfusion/deployment",
+  "version": "1.0.0",
+  "description": "FlashFusion Deployment Templates and Tools",
+  "main": "./index.js",
+  "bin": {
+    "ff-deploy": "./bin/deploy.js"
+  },
+  "scripts": {
+    "build": "echo 'Building deployment tools'",
+    "test": "echo 'Testing deployment tools'"
+  },
+  "dependencies": {
+    "commander": "^9.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

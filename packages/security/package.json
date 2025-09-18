@@ -1,0 +1,23 @@
+{
+  "name": "@flashfusion/security",
+  "version": "1.0.0",
+  "description": "FlashFusion Security Utilities and Middleware",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "echo 'Building security utilities'",
+    "dev": "echo 'No dev server needed for security utilities'",
+    "lint": "echo 'Linting security utilities'",
+    "test": "echo 'Testing security utilities'"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.0.0",
+    "jsonwebtoken": "^9.0.0",
+    "helmet": "^7.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/bcryptjs": "^2.0.0",
+    "@types/jsonwebtoken": "^9.0.0"
+  }
+}
