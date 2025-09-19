@@ -1,0 +1,330 @@
+name: Self-Hosted Runners
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Runner action'
+        required: true
+        default: 'start'
+        type: choice
+        options:
+        - start
+        - stop
+        - status
+        - scale
+      runner_count:
+        description: 'Number of runners (for scale action)'
+        required: false
+        default: '2'
+        type: string
+
+env:
+  RUNNER_IMAGE: 'ghcr.io/actions/actions-runner:latest'
+  NODE_VERSION: '18'
+
+jobs:
+  manage-runners:
+    name: Manage Self-Hosted Runners
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create custom runner image
+        run: |
+          cat > Dockerfile.runner << 'EOF'
+          FROM ghcr.io/actions/actions-runner:latest
+          
+          # Install additional tools
+          USER root
+          RUN apt-get update && apt-get install -y \
+              curl \
+              git \
+              jq \
+              wget \
+              zip \
+              unzip \
+              build-essential \
+              python3 \
+              python3-pip \
+              docker.io \
+              && rm -rf /var/lib/apt/lists/*
+          
+          # Install Node.js 18
+          RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+              && apt-get install -y nodejs
+          
+          # Install additional security tools
+          RUN npm install -g @snyk/cli audit-ci
+          
+          # Install Docker Compose
+          RUN curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
+              && chmod +x /usr/local/bin/docker-compose
+          
+          # Install Trivy for container scanning
+          RUN wget -qO- https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh \
+              && mv bin/trivy /usr/local/bin/
+          
+          # Install TruffleHog for secret scanning
+          RUN wget -qO- https://github.com/trufflesecurity/trufflehog/releases/latest/download/trufflehog_linux_amd64.tar.gz | tar -xz -C /usr/local/bin/
+          
+          # Create workspace
+          RUN mkdir -p /workspace && chown runner:runner /workspace
+          
+          USER runner
+          WORKDIR /workspace
+          EOF
+
+      - name: Build custom runner image
+        if: github.event.inputs.action == 'start' || github.event.inputs.action == 'scale'
+        run: |
+          docker build -f Dockerfile.runner -t flashfusion-runner:latest .
+
+      - name: Create runner configuration
+        if: github.event.inputs.action == 'start' || github.event.inputs.action == 'scale'
+        run: |
+          cat > docker-compose.runners.yml << 'EOF'
+          version: '3.8'
+          
+          services:
+            runner-web:
+              image: flashfusion-runner:latest
+              environment:
+                - REPO_URL=${{ github.repository }}
+                - RUNNER_NAME=flashfusion-web-runner
+                - RUNNER_LABELS=web,frontend,nextjs
+                - RUNNER_TOKEN=${{ secrets.GH_RUNNER_TOKEN }}
+                - RUNNER_WORKDIR=/workspace
+              volumes:
+                - /var/run/docker.sock:/var/run/docker.sock
+                - runner_workspace_web:/workspace
+              restart: unless-stopped
+              deploy:
+                resources:
+                  limits:
+                    memory: 4G
+                    cpus: '2'
+          
+            runner-api:
+              image: flashfusion-runner:latest
+              environment:
+                - REPO_URL=${{ github.repository }}
+                - RUNNER_NAME=flashfusion-api-runner
+                - RUNNER_LABELS=api,backend,nodejs
+                - RUNNER_TOKEN=${{ secrets.GH_RUNNER_TOKEN }}
+                - RUNNER_WORKDIR=/workspace
+              volumes:
+                - /var/run/docker.sock:/var/run/docker.sock
+                - runner_workspace_api:/workspace
+              restart: unless-stopped
+              deploy:
+                resources:
+                  limits:
+                    memory: 4G
+                    cpus: '2'
+          
+            runner-security:
+              image: flashfusion-runner:latest
+              environment:
+                - REPO_URL=${{ github.repository }}
+                - RUNNER_NAME=flashfusion-security-runner
+                - RUNNER_LABELS=security,scanning,analysis
+                - RUNNER_TOKEN=${{ secrets.GH_RUNNER_TOKEN }}
+                - RUNNER_WORKDIR=/workspace
+              volumes:
+                - /var/run/docker.sock:/var/run/docker.sock
+                - runner_workspace_security:/workspace
+              restart: unless-stopped
+              deploy:
+                resources:
+                  limits:
+                    memory: 8G
+                    cpus: '4'
+          
+            runner-build:
+              image: flashfusion-runner:latest
+              environment:
+                - REPO_URL=${{ github.repository }}
+                - RUNNER_NAME=flashfusion-build-runner
+                - RUNNER_LABELS=build,compilation,turborepo
+                - RUNNER_TOKEN=${{ secrets.GH_RUNNER_TOKEN }}
+                - RUNNER_WORKDIR=/workspace
+              volumes:
+                - /var/run/docker.sock:/var/run/docker.sock
+                - runner_workspace_build:/workspace
+              restart: unless-stopped
+              deploy:
+                resources:
+                  limits:
+                    memory: 6G
+                    cpus: '4'
+          
+          volumes:
+            runner_workspace_web:
+            runner_workspace_api:
+            runner_workspace_security:
+            runner_workspace_build:
+          
+          networks:
+            default:
+              name: flashfusion-runners
+          EOF
+
+      - name: Start runners
+        if: github.event.inputs.action == 'start'
+        run: |
+          echo "Starting FlashFusion self-hosted runners..."
+          docker-compose -f docker-compose.runners.yml up -d
+          echo "Runners started successfully"
+
+      - name: Scale runners
+        if: github.event.inputs.action == 'scale'
+        run: |
+          echo "Scaling runners to ${{ github.event.inputs.runner_count }} instances..."
+          # Scale specific services based on need
+          docker-compose -f docker-compose.runners.yml up -d --scale runner-build=${{ github.event.inputs.runner_count }}
+          echo "Runners scaled successfully"
+
+      - name: Stop runners
+        if: github.event.inputs.action == 'stop'
+        run: |
+          echo "Stopping FlashFusion self-hosted runners..."
+          docker-compose -f docker-compose.runners.yml down
+          echo "Runners stopped successfully"
+
+      - name: Check runner status
+        if: github.event.inputs.action == 'status'
+        run: |
+          echo "Checking runner status..."
+          docker-compose -f docker-compose.runners.yml ps
+          echo ""
+          echo "Docker containers:"
+          docker ps --filter "name=runner" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          echo ""
+          echo "Resource usage:"
+          docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}"
+
+  runner-monitoring:
+    name: Monitor Runner Health
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'status' || github.event.inputs.action == 'start'
+    steps:
+      - name: Check runner connectivity
+        run: |
+          echo "Checking GitHub API connectivity..."
+          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github.v3+json" \
+               https://api.github.com/repos/${{ github.repository }}/actions/runners
+
+      - name: Generate runner monitoring script
+        run: |
+          cat > monitor-runners.sh << 'EOF'
+          #!/bin/bash
+          
+          echo "=== FlashFusion Runner Monitoring ==="
+          echo "Timestamp: $(date)"
+          echo ""
+          
+          # Check Docker health
+          echo "Docker Service Status:"
+          systemctl is-active docker || echo "Docker service not active"
+          echo ""
+          
+          # Check runner containers
+          echo "Runner Containers:"
+          docker ps --filter "name=runner" --format "table {{.Names}}\t{{.Status}}\t{{.RunningFor}}\t{{.Size}}"
+          echo ""
+          
+          # Check resource usage
+          echo "Resource Usage:"
+          docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}\t{{.BlockIO}}"
+          echo ""
+          
+          # Check disk space
+          echo "Disk Usage:"
+          df -h | grep -E "(Filesystem|/dev/)"
+          echo ""
+          
+          # Check runner logs for errors
+          echo "Recent Runner Logs (errors only):"
+          docker-compose -f docker-compose.runners.yml logs --tail=50 | grep -i error || echo "No errors found"
+          echo ""
+          
+          # Network connectivity test
+          echo "Network Connectivity:"
+          docker run --rm alpine/curl -s https://api.github.com/zen || echo "GitHub API unreachable"
+          echo ""
+          
+          echo "=== Monitoring Complete ==="
+          EOF
+          
+          chmod +x monitor-runners.sh
+
+      - name: Upload monitoring script
+        uses: actions/upload-artifact@v4
+        with:
+          name: runner-monitoring-script
+          path: monitor-runners.sh
+
+  runner-maintenance:
+    name: Runner Maintenance
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'start'
+    steps:
+      - name: Create maintenance scripts
+        run: |
+          # Cleanup script
+          cat > cleanup-runners.sh << 'EOF'
+          #!/bin/bash
+          
+          echo "Starting runner maintenance..."
+          
+          # Remove unused Docker images
+          docker image prune -f
+          
+          # Remove unused volumes
+          docker volume prune -f
+          
+          # Remove unused networks
+          docker network prune -f
+          
+          # Clean up workspace files older than 7 days
+          find /var/lib/docker/volumes/*/data -type f -mtime +7 -delete 2>/dev/null || true
+          
+          # Restart runners to ensure clean state
+          docker-compose -f docker-compose.runners.yml restart
+          
+          echo "Maintenance completed"
+          EOF
+          
+          # Update script
+          cat > update-runners.sh << 'EOF'
+          #!/bin/bash
+          
+          echo "Updating runner images..."
+          
+          # Pull latest runner image
+          docker pull ghcr.io/actions/actions-runner:latest
+          
+          # Rebuild custom image
+          docker build -f Dockerfile.runner -t flashfusion-runner:latest .
+          
+          # Recreate containers with new image
+          docker-compose -f docker-compose.runners.yml up -d --force-recreate
+          
+          echo "Update completed"
+          EOF
+          
+          chmod +x cleanup-runners.sh update-runners.sh
+
+      - name: Upload maintenance scripts
+        uses: actions/upload-artifact@v4
+        with:
+          name: runner-maintenance-scripts
+          path: |
+            cleanup-runners.sh
+            update-runners.sh
