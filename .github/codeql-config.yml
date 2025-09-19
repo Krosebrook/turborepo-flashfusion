@@ -1,0 +1,18 @@
+queries:
+  - uses: javascript-security-config
+
+paths:
+  - "apps/"
+  - "packages/"
+  - "tools/"
+
+paths-ignore:
+  - "node_modules/"
+  - "dist/"
+  - ".next/"
+  - "coverage/"
+
+disable-default-queries: false
+
+pack-bundle-options:
+  - javascript-security
