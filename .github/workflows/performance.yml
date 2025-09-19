@@ -1,0 +1,419 @@
+name: Performance & Monitoring
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  performance-audit:
+    name: Performance Audit
+    runs-on: ubuntu-latest
+    container:
+      image: node:18-alpine
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          npm ci --prefer-offline --no-audit
+          npm install -g @lhci/cli lighthouse
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm run dev &
+          sleep 30  # Wait for app to start
+
+      - name: Run Lighthouse CI
+        run: |
+          lhci autorun --config=./lighthouse.config.js || true
+
+      - name: Upload Lighthouse results
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-results
+          path: .lighthouseci/
+          retention-days: 30
+
+  load-testing:
+    name: Load Testing
+    runs-on: ubuntu-latest
+    container:
+      image: node:18-alpine
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install k6
+        run: |
+          apk add --no-cache curl
+          curl -s https://github.com/grafana/k6/releases/latest/download/k6-latest-linux-amd64.tar.gz | tar -xz
+          mv k6-* /usr/local/bin/k6
+          chmod +x /usr/local/bin/k6
+
+      - name: Create load test script
+        run: |
+          cat > load-test.js << 'EOF'
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+          
+          export let options = {
+            stages: [
+              { duration: '2m', target: 10 }, // Ramp up
+              { duration: '5m', target: 10 }, // Stay at 10 users
+              { duration: '2m', target: 50 }, // Ramp up to 50 users
+              { duration: '5m', target: 50 }, // Stay at 50 users
+              { duration: '2m', target: 0 },  // Ramp down
+            ],
+            thresholds: {
+              http_req_duration: ['p(95)<500'], // 95% of requests under 500ms
+              http_req_failed: ['rate<0.1'],   // Error rate under 10%
+            },
+          };
+          
+          export default function() {
+            let response = http.get('http://localhost:3000');
+            check(response, {
+              'status is 200': (r) => r.status === 200,
+              'response time < 500ms': (r) => r.timings.duration < 500,
+            });
+            
+            // API endpoint test
+            response = http.get('http://localhost:8080/health');
+            check(response, {
+              'API health check': (r) => r.status === 200,
+            });
+            
+            sleep(1);
+          }
+          EOF
+
+      - name: Start application
+        run: |
+          npm ci --prefer-offline --no-audit
+          npm run build
+          npm run dev &
+          sleep 30
+
+      - name: Run load tests
+        run: |
+          k6 run load-test.js --out json=load-test-results.json
+
+      - name: Upload load test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-results
+          path: load-test-results.json
+
+  bundle-analysis:
+    name: Bundle Size Analysis
+    runs-on: ubuntu-latest
+    container:
+      image: node:18-alpine
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Install bundle analyzer
+        run: npm install -g webpack-bundle-analyzer
+
+      - name: Build with analysis
+        run: |
+          npm run build
+          # Generate bundle analysis
+          npx webpack-bundle-analyzer apps/web/.next/static/chunks/*.js --mode static --report bundle-report.html
+
+      - name: Upload bundle analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-analysis
+          path: bundle-report.html
+
+  memory-profiling:
+    name: Memory & CPU Profiling
+    runs-on: ubuntu-latest
+    container:
+      image: node:18-alpine
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          npm ci --prefer-offline --no-audit
+          npm install -g clinic
+
+      - name: Memory profiling
+        run: |
+          # Build application
+          npm run build
+          
+          # Profile memory usage
+          clinic doctor --on-port='curl http://localhost:8080/health' -- node apps/api/main.js &
+          PID=$!
+          sleep 30
+          kill $PID || true
+          
+          # Profile CPU usage  
+          clinic flame --on-port='curl http://localhost:8080/health' -- node apps/api/main.js &
+          PID=$!
+          sleep 30
+          kill $PID || true
+
+      - name: Upload profiling results
+        uses: actions/upload-artifact@v4
+        with:
+          name: profiling-results
+          path: |
+            .clinic/
+          retention-days: 7
+
+  dependency-analysis:
+    name: Dependency Analysis
+    runs-on: ubuntu-latest
+    container:
+      image: node:18-alpine
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Install analysis tools
+        run: npm install -g depcheck madge
+
+      - name: Check unused dependencies
+        run: |
+          depcheck --json > depcheck-results.json || true
+          cat depcheck-results.json
+
+      - name: Analyze circular dependencies
+        run: |
+          madge --circular --format json apps/ packages/ > circular-deps.json || true
+          cat circular-deps.json
+
+      - name: Generate dependency graph
+        run: |
+          madge --image dependency-graph.svg apps/ packages/
+
+      - name: Upload dependency analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-analysis
+          path: |
+            depcheck-results.json
+            circular-deps.json
+            dependency-graph.svg
+
+  monitoring-setup:
+    name: Setup Application Monitoring
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create monitoring configurations
+        run: |
+          mkdir -p monitoring
+          
+          # Prometheus configuration
+          cat > monitoring/prometheus.yml << 'EOF'
+          global:
+            scrape_interval: 15s
+            evaluation_interval: 15s
+          
+          rule_files:
+            - "rules/*.yml"
+          
+          scrape_configs:
+            - job_name: 'flashfusion-web'
+              static_configs:
+                - targets: ['web:3000']
+              metrics_path: '/api/metrics'
+              scrape_interval: 10s
+          
+            - job_name: 'flashfusion-api'
+              static_configs:
+                - targets: ['api:8080']
+              metrics_path: '/metrics'
+              scrape_interval: 10s
+          
+            - job_name: 'node-exporter'
+              static_configs:
+                - targets: ['node-exporter:9100']
+          
+            - job_name: 'cadvisor'
+              static_configs:
+                - targets: ['cadvisor:8080']
+          EOF
+          
+          # Grafana datasource configuration
+          mkdir -p monitoring/grafana/provisioning/datasources
+          cat > monitoring/grafana/provisioning/datasources/prometheus.yml << 'EOF'
+          apiVersion: 1
+          
+          datasources:
+            - name: Prometheus
+              type: prometheus
+              url: http://prometheus:9090
+              access: proxy
+              isDefault: true
+              editable: true
+          EOF
+          
+          # Alert manager configuration
+          cat > monitoring/alertmanager.yml << 'EOF'
+          global:
+            smtp_smarthost: 'localhost:587'
+            smtp_from: 'alerts@flashfusion.dev'
+          
+          route:
+            group_by: ['alertname']
+            group_wait: 10s
+            group_interval: 10s
+            repeat_interval: 1h
+            receiver: 'web.hook'
+          
+          receivers:
+            - name: 'web.hook'
+              webhook_configs:
+                - url: 'http://api:8080/webhooks/alerts'
+          EOF
+
+      - name: Create monitoring dashboard
+        run: |
+          mkdir -p monitoring/grafana/provisioning/dashboards
+          cat > monitoring/grafana/provisioning/dashboards/flashfusion.json << 'EOF'
+          {
+            "dashboard": {
+              "id": null,
+              "title": "FlashFusion Monitoring",
+              "tags": ["flashfusion"],
+              "style": "dark",
+              "timezone": "browser",
+              "panels": [
+                {
+                  "id": 1,
+                  "title": "Request Rate",
+                  "type": "graph",
+                  "targets": [
+                    {
+                      "expr": "rate(http_requests_total[5m])",
+                      "legendFormat": "{{method}} {{status}}"
+                    }
+                  ]
+                },
+                {
+                  "id": 2,
+                  "title": "Response Time",
+                  "type": "graph",
+                  "targets": [
+                    {
+                      "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+                      "legendFormat": "95th percentile"
+                    }
+                  ]
+                },
+                {
+                  "id": 3,
+                  "title": "Memory Usage",
+                  "type": "graph",
+                  "targets": [
+                    {
+                      "expr": "process_resident_memory_bytes",
+                      "legendFormat": "Memory"
+                    }
+                  ]
+                }
+              ],
+              "time": {
+                "from": "now-1h",
+                "to": "now"
+              },
+              "refresh": "5s"
+            }
+          }
+          EOF
+
+      - name: Upload monitoring configuration
+        uses: actions/upload-artifact@v4
+        with:
+          name: monitoring-config
+          path: monitoring/
+
+  performance-report:
+    name: Generate Performance Report
+    runs-on: ubuntu-latest
+    needs: [performance-audit, load-testing, bundle-analysis, memory-profiling, dependency-analysis]
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Generate performance report
+        run: |
+          mkdir -p performance-report
+          
+          cat > performance-report/README.md << 'EOF'
+          # FlashFusion Performance Report
+          
+          Generated: $(date)
+          
+          ## Performance Metrics
+          
+          ### Lighthouse Audit
+          EOF
+          
+          if [ -d "lighthouse-results" ]; then
+            echo "✅ Lighthouse audit completed" >> performance-report/README.md
+            echo "See lighthouse-results/ for detailed reports" >> performance-report/README.md
+          else
+            echo "❌ Lighthouse audit failed" >> performance-report/README.md
+          fi
+          
+          echo "" >> performance-report/README.md
+          echo "### Load Testing" >> performance-report/README.md
+          
+          if [ -f "load-test-results/load-test-results.json" ]; then
+            echo "✅ Load testing completed" >> performance-report/README.md
+            echo "See load-test-results.json for metrics" >> performance-report/README.md
+          else
+            echo "❌ Load testing failed" >> performance-report/README.md
+          fi
+          
+          echo "" >> performance-report/README.md
+          echo "### Bundle Analysis" >> performance-report/README.md
+          
+          if [ -f "bundle-analysis/bundle-report.html" ]; then
+            echo "✅ Bundle analysis completed" >> performance-report/README.md
+            echo "See bundle-report.html for size breakdown" >> performance-report/README.md
+          else
+            echo "❌ Bundle analysis failed" >> performance-report/README.md
+          fi
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report
+          path: performance-report/
+          retention-days: 30
