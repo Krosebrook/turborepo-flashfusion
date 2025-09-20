@@ -546,6 +546,49 @@ ${colors.bright}📁 Documentation Files${colors.reset}
         }
     },
 
+    // Milestone management
+    'milestone': () => {
+        const subcommand = process.argv[3] || 'help';
+        const { MilestoneManager } = require('../milestone-manager');
+        const manager = new MilestoneManager();
+        
+        switch(subcommand) {
+            case 'status':
+                manager.displayStatus();
+                break;
+            case 'sync':
+                manager.exportToGitHub();
+                break;
+            case 'template':
+                const title = process.argv[4] || 'New Milestone';
+                const description = process.argv[5] || '';
+                console.log(manager.createMilestoneTemplate(title, description));
+                break;
+            case 'help':
+            default:
+                console.log(`
+${colors.bright}${colors.blue}FlashFusion Milestone Management${colors.reset}
+
+${colors.bright}🎯 Milestone Commands${colors.reset}
+  ff milestone status            Display current milestone status
+  ff milestone sync              Export milestones for GitHub creation  
+  ff milestone template <title>  Generate milestone template
+  ff milestone help              Show this help message
+
+${colors.bright}📋 Available Milestones${colors.reset}
+  Phase 1: Core Platform Setup      (HIGH Priority - 2 weeks)
+  Phase 2: Enhanced Development      (MEDIUM Priority - 2 weeks)
+  Phase 3: Production Infrastructure (LOW Priority - 2 weeks)
+  Phase 4: Repository Integration    (SPECIALIZED - 3 weeks)
+  Phase 5: Quality & Optimization    (CONTINUOUS - ongoing)
+
+${colors.bright}📖 Documentation${colors.reset}
+  docs/MILESTONES.md                Detailed milestone documentation
+                `);
+                break;
+        }
+    },
+
     // Show help and version
     'help': () => {
         console.log(`
@@ -566,6 +609,7 @@ ${colors.bright}🔄 Migration & Integration${colors.reset}
   ff migrate [command]       Repository migration commands
   ff validate [command]      Validation and testing commands
   ff docs [command]          Documentation commands
+  ff milestone [command]     Milestone management commands
 
 ${colors.bright}🚀 Deployment & Hosting${colors.reset}
   ff:vercel:link             Link Vercel project
