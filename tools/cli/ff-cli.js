@@ -567,6 +567,18 @@ ${colors.bright}🔄 Migration & Integration${colors.reset}
   ff validate [command]      Validation and testing commands
   ff docs [command]          Documentation commands
 
+${colors.bright}🧠 RAG System (Semantic Search)${colors.reset}
+  ff rag:build [path]        Build knowledge base from repository
+  ff rag:rebuild [path]      Force rebuild knowledge base
+  ff rag:query <question>    Ask questions about the repository
+  ff rag:search <code>       Search for specific code patterns
+  ff rag:docs <topic>        Get documentation for a topic
+  ff rag:overview           Get repository overview
+  ff rag:stats              Show RAG system statistics
+  ff rag:health             Show RAG system health
+  ff rag:clear              Clear knowledge base
+  ff rag:demo               Run interactive demo
+
 ${colors.bright}🚀 Deployment & Hosting${colors.reset}
   ff:vercel:link             Link Vercel project
   ff:vercel:deploy           Deploy to staging
@@ -813,6 +825,83 @@ ${colors.bright}🚀 Frameworks:${colors.reset}
         } catch (error) {
             log.error(`List failed: ${error.message}`);
         }
+    },
+
+    // 🧠 RAG System Commands
+    'rag:build': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        const targetPath = process.argv[3] || process.cwd();
+        await ragCli.buildKnowledgeBase(targetPath, false);
+    },
+
+    'rag:rebuild': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        const targetPath = process.argv[3] || process.cwd();
+        await ragCli.buildKnowledgeBase(targetPath, true);
+    },
+
+    'rag:query': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        const query = process.argv.slice(3).join(' ');
+        if (!query) {
+            log.error('Please provide a question to query');
+            return;
+        }
+        await ragCli.queryRepository(query);
+    },
+
+    'rag:search': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        const searchQuery = process.argv.slice(3).join(' ');
+        if (!searchQuery) {
+            log.error('Please provide a search query');
+            return;
+        }
+        await ragCli.searchCode(searchQuery);
+    },
+
+    'rag:docs': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        const topic = process.argv.slice(3).join(' ');
+        if (!topic) {
+            log.error('Please provide a documentation topic');
+            return;
+        }
+        await ragCli.getDocumentation(topic);
+    },
+
+    'rag:overview': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        await ragCli.getOverview();
+    },
+
+    'rag:stats': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        await ragCli.showStats();
+    },
+
+    'rag:health': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        await ragCli.showHealth();
+    },
+
+    'rag:clear': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        await ragCli.clearKnowledgeBase();
+    },
+
+    'rag:demo': async () => {
+        const demo = require(path.join(__dirname, '../../packages/rag/demo'));
+        await demo();
     }
 };
 
