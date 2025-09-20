@@ -1,0 +1,22 @@
+{
+  "name": "@flashfusion/testing",
+  "version": "1.0.0",
+  "description": "FlashFusion Testing Framework and Utilities",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "echo 'Building testing utilities'",
+    "dev": "echo 'No dev server needed for testing utilities'",
+    "lint": "echo 'Linting testing utilities'",
+    "test": "echo 'Testing testing utilities'"
+  },
+  "dependencies": {
+    "jest": "^29.0.0",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/jest-dom": "^6.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/jest": "^29.0.0"
+  }
+}
