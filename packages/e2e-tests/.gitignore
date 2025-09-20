@@ -1,0 +1,23 @@
+# Test results and reports
+test-results/
+playwright-report/
+test-results.json
+test-results.xml
+
+# Environment files
+.env.local
+.env
+
+# Dependencies
+node_modules/
+
+# Screenshots and videos
+screenshots/
+videos/
+
+# Coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.log
