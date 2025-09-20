@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  # Development environment with hot reload
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "3000:3000"  # Web app
+      - "8080:8080"  # API server
+      - "9229:9229"  # Node.js debugger
+    environment:
+      - NODE_ENV=development
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - .:/app:cached
+      - node_modules:/app/node_modules
+      - next_cache:/app/apps/web/.next
+      - turbo_cache:/app/.turbo
+    depends_on:
+      - redis
+      - postgres
+    command: npm run dev
+
+  # Redis for development
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+
+  # PostgreSQL for development
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=flashfusion_dev
+      - POSTGRES_USER=flashfusion
+      - POSTGRES_PASSWORD=flashfusion_dev
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./scripts/init-dev-db.sql:/docker-entrypoint-initdb.d/init-dev-db.sql:ro
+
+  # Testing environment
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgresql://flashfusion:flashfusion_test@postgres_test:5432/flashfusion_test
+    volumes:
+      - .:/app:cached
+      - node_modules:/app/node_modules
+    depends_on:
+      - postgres_test
+    command: npm run test
+
+  # Isolated test database
+  postgres_test:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=flashfusion_test
+      - POSTGRES_USER=flashfusion
+      - POSTGRES_PASSWORD=flashfusion_test
+    tmpfs:
+      - /var/lib/postgresql/data  # In-memory for faster tests
+
+  # Development tools
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@flashfusion.dev
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+
+  # Redis Commander for Redis management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    depends_on:
+      - redis
+
+volumes:
+  node_modules:
+  next_cache:
+  turbo_cache:
+  redis_dev_data:
+  postgres_dev_data:
+  pgadmin_data:
+
+networks:
+  default:
+    name: flashfusion-dev-network
+    driver: bridge

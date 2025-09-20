@@ -1,0 +1,348 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+  NODE_VERSION: '18'
+
+jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.changes.outputs.packages }}
+      web: ${{ steps.changes.outputs.web }}
+      api: ${{ steps.changes.outputs.api }}
+      agents: ${{ steps.changes.outputs.agents }}
+      shared: ${{ steps.changes.outputs.shared }}
+      cli: ${{ steps.changes.outputs.cli }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect package changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            packages:
+              - 'packages/**'
+              - 'apps/**'
+              - 'tools/**'
+            web:
+              - 'apps/web/**'
+              - 'packages/shared/**'
+            api:
+              - 'apps/api/**'
+              - 'packages/shared/**'
+              - 'packages/ai-agents/**'
+            agents:
+              - 'packages/ai-agents/**'
+              - 'packages/shared/**'
+            shared:
+              - 'packages/shared/**'
+            cli:
+              - 'tools/cli/**'
+              - 'packages/shared/**'
+
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.packages == 'true'
+    container:
+      image: node:18-alpine
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        run: |
+          npm config set fund false
+          npm config set audit-level moderate
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+            .turbo
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run type-check
+
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.packages == 'true'
+    container:
+      image: node:18-alpine
+      options: --user root
+    strategy:
+      matrix:
+        package: [web, api, agents, shared, cli]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        run: |
+          npm config set fund false
+          npm config set audit-level moderate
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+            .turbo
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run tests
+        run: npm run test --if-present
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.package }}
+          path: |
+            coverage/
+            test-results/
+          retention-days: 7
+
+  build:
+    name: Build Packages
+    runs-on: ubuntu-latest
+    needs: [detect-changes, lint-and-typecheck]
+    if: needs.detect-changes.outputs.packages == 'true'
+    container:
+      image: node:18-alpine
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        run: |
+          npm config set fund false
+          npm config set audit-level moderate
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+            .turbo
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Build packages
+        run: npm run build
+
+      - name: Cache build outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/.next
+            apps/*/dist
+            packages/*/dist
+            .turbo
+          key: ${{ runner.os }}-build-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-build-
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            apps/web/.next/
+            apps/*/dist/
+            packages/*/dist/
+          retention-days: 7
+
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.packages == 'true'
+    container:
+      image: node:18-alpine
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        run: |
+          npm config set fund false
+          npm config set audit-level moderate
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          languages: javascript
+        continue-on-error: true
+
+      - name: Upload security results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-results
+          path: |
+            security-results/
+          retention-days: 30
+
+  performance-test:
+    name: Performance Testing
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: needs.detect-changes.outputs.web == 'true'
+    container:
+      image: node:18-alpine
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        run: |
+          npm config set fund false
+          npm config set audit-level moderate
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Performance tests
+        run: |
+          echo "Running performance tests..."
+          # Add actual performance testing commands here
+          npm run test:performance --if-present
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-results
+          path: |
+            performance-results/
+          retention-days: 7
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build, test, security-scan]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment:
+      name: staging
+      url: ${{ steps.deploy.outputs.url }}
+    container:
+      image: node:18-alpine
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: Deploy to staging
+        id: deploy
+        run: |
+          echo "Deploying to staging environment..."
+          echo "url=https://staging.flashfusion.dev" >> $GITHUB_OUTPUT
+          # Add actual deployment commands here
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, test, security-scan, performance-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    container:
+      image: node:18-alpine
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: Deploy to production
+        id: deploy
+        run: |
+          echo "Deploying to production environment..."
+          echo "url=https://flashfusion.dev" >> $GITHUB_OUTPUT
+          # Add actual deployment commands here
+
+      - name: Post-deployment verification
+        run: |
+          echo "Running post-deployment health checks..."
+          # Add health check commands here
+
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    steps:
+      - name: Notify deployment status
+        run: |
+          echo "Sending deployment notifications..."
+          # Add notification logic here (Slack, Discord, etc.)

@@ -1,0 +1,233 @@
+name: Security Scanning
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    container:
+      image: node:18-alpine
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        run: |
+          npm config set fund false
+          npm config set audit-level moderate
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level=moderate --json > audit-results.json || true
+          npm audit --audit-level=moderate
+
+      - name: Upload audit results
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-results
+          path: audit-results.json
+
+  sast-scan:
+    name: Static Application Security Testing
+    runs-on: ubuntu-latest
+    container:
+      image: node:18-alpine
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+          config-file: ./.github/codeql-config.yml
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript"
+
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    container:
+      image: alpine/git:latest
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install TruffleHog
+        run: |
+          apk add --no-cache wget
+          wget -qO- https://github.com/trufflesecurity/trufflehog/releases/latest/download/trufflehog_linux_amd64.tar.gz | tar -xz
+          chmod +x trufflehog
+
+      - name: Run TruffleHog
+        run: |
+          ./trufflehog git file://. --json > trufflehog-results.json || true
+          echo "Secret scan completed"
+
+      - name: Upload secret scan results
+        uses: actions/upload-artifact@v4
+        with:
+          name: secret-scan-results
+          path: trufflehog-results.json
+
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build test container
+        run: |
+          cat > Dockerfile.test << EOF
+          FROM node:18-alpine
+          WORKDIR /app
+          COPY package*.json ./
+          RUN npm ci --prefer-offline --no-audit
+          COPY . .
+          RUN npm run build
+          EXPOSE 3000
+          CMD ["npm", "start"]
+          EOF
+
+      - name: Build Docker image
+        run: docker build -f Dockerfile.test -t flashfusion-test:latest .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'flashfusion-test:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  license-scan:
+    name: License Compliance Scan
+    runs-on: ubuntu-latest
+    container:
+      image: node:18-alpine
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Install license checker
+        run: npm install -g license-checker
+
+      - name: Check licenses
+        run: |
+          license-checker --json > license-report.json
+          license-checker --summary
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-report
+          path: license-report.json
+
+  security-report:
+    name: Generate Security Report
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, sast-scan, secret-scan, container-scan, license-scan]
+    if: always()
+    container:
+      image: node:18-alpine
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Generate security report
+        run: |
+          mkdir -p security-report
+          
+          echo "# Security Scan Report - $(date)" > security-report/README.md
+          echo "" >> security-report/README.md
+          echo "## Scan Results" >> security-report/README.md
+          echo "" >> security-report/README.md
+          
+          # Check if audit results exist
+          if [ -f audit-results/audit-results.json ]; then
+            echo "✅ Dependency scan completed" >> security-report/README.md
+          else
+            echo "❌ Dependency scan failed" >> security-report/README.md
+          fi
+          
+          # Check if secret scan results exist
+          if [ -f secret-scan-results/trufflehog-results.json ]; then
+            echo "✅ Secret scan completed" >> security-report/README.md
+          else
+            echo "❌ Secret scan failed" >> security-report/README.md
+          fi
+          
+          # Check if license report exists
+          if [ -f license-report/license-report.json ]; then
+            echo "✅ License scan completed" >> security-report/README.md
+          else
+            echo "❌ License scan failed" >> security-report/README.md
+          fi
+          
+          echo "" >> security-report/README.md
+          echo "## Next Steps" >> security-report/README.md
+          echo "1. Review all scan results" >> security-report/README.md
+          echo "2. Address any high/critical vulnerabilities" >> security-report/README.md
+          echo "3. Update dependencies if needed" >> security-report/README.md
+          echo "4. Review license compliance" >> security-report/README.md
+
+      - name: Upload consolidated security report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: security-report/
+          retention-days: 30
+
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('security-report/README.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔒 Security Scan Results\n\n${report}`
+            });
