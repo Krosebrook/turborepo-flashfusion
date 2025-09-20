@@ -546,6 +546,147 @@ ${colors.bright}📁 Documentation Files${colors.reset}
         }
     },
 
+    // Database migration commands
+    'db': () => {
+        const subcommand = process.argv[3] || 'help';
+        
+        const runMigrationCommand = async (command) => {
+            try {
+                // Check for required dependencies
+                try {
+                    require('@supabase/supabase-js');
+                } catch (error) {
+                    log.error('Missing database dependencies. Please install required packages:');
+                    log.info('npm install @supabase/supabase-js pg');
+                    return;
+                }
+                
+                const DatabaseMigrationAgent = require('../../packages/ai-agents/DatabaseMigrationAgent');
+                const databaseService = require('../../apps/web/src/services/unifiedDatabase');
+                
+                // Initialize database service
+                const dbService = new databaseService();
+                await dbService.initialize();
+                
+                // Create migration agent
+                const migrationAgent = new DatabaseMigrationAgent(dbService, {
+                    environment: process.env.NODE_ENV || 'development',
+                    dryRun: process.argv.includes('--dry-run'),
+                    logger: log
+                });
+                
+                await migrationAgent.initialize();
+                
+                switch(command) {
+                    case 'migrate':
+                        log.info('🚀 Running database migrations...');
+                        const result = await migrationAgent.migrate();
+                        if (result.success) {
+                            log.success(`✅ Migrations completed! Executed ${result.migrationsExecuted} migration(s)`);
+                        } else {
+                            log.error(`❌ Migration failed after ${result.migrationsExecuted} successful migration(s)`);
+                        }
+                        break;
+                        
+                    case 'status':
+                        log.info('📊 Checking migration status...');
+                        const status = await migrationAgent.getStatus();
+                        console.log(`
+${colors.bright}Migration Status${colors.reset}
+Environment: ${status.environment}
+Total Migrations: ${status.totalMigrations}
+Executed: ${status.executedCount}
+Pending: ${status.pendingCount}
+Status: ${status.status}
+
+${status.pendingMigrations?.length > 0 ? 
+`${colors.yellow}Pending Migrations:${colors.reset}
+${status.pendingMigrations.map(m => `  - ${m.name} (v${m.version})`).join('\n')}` :
+`${colors.green}Database is up to date!${colors.reset}`}
+                        `);
+                        break;
+                        
+                    case 'generate':
+                        const migrationName = process.argv[4];
+                        const description = process.argv.slice(5).join(' ');
+                        if (!migrationName) {
+                            log.error('Migration name is required: ff db generate <name> [description]');
+                            return;
+                        }
+                        log.info(`📝 Generating migration: ${migrationName}`);
+                        const generated = await migrationAgent.generateMigration(migrationName, description);
+                        log.success(`✅ Generated migration: ${generated.filename}`);
+                        break;
+                        
+                    case 'rollback':
+                        const rollbackName = process.argv[4];
+                        if (!rollbackName) {
+                            log.error('Migration name is required: ff db rollback <migration_name>');
+                            return;
+                        }
+                        log.info(`🔄 Rolling back migration: ${rollbackName}`);
+                        await migrationAgent.rollbackMigration(rollbackName);
+                        log.success(`✅ Migration rolled back: ${rollbackName}`);
+                        break;
+                        
+                    default:
+                        log.error(`Unknown database command: ${command}`);
+                        showDbHelp();
+                }
+                
+                await dbService.shutdown();
+                
+            } catch (error) {
+                log.error(`Database operation failed: ${error.message}`);
+                process.exit(1);
+            }
+        };
+        
+        const showDbHelp = () => {
+            console.log(`
+${colors.bright}${colors.blue}FlashFusion Database Migration Commands${colors.reset}
+
+${colors.bright}🗄️ Migration Operations${colors.reset}
+  ff db migrate              Run all pending migrations
+  ff db migrate --dry-run    Preview migrations without executing
+  ff db status               Show migration status
+  ff db generate <name>      Generate new migration file
+  ff db rollback <name>      Rollback specific migration
+
+${colors.bright}📊 Database Status${colors.reset}
+  ff db status               Current migration status
+  
+${colors.bright}⚙️ Options${colors.reset}
+  --dry-run                  Preview changes without executing
+  --env=<environment>        Specify environment (default: development)
+
+${colors.bright}📝 Examples${colors.reset}
+  ff db generate add_user_profiles "Add user profile tables"
+  ff db migrate --dry-run
+  ff db migrate
+  ff db rollback add_user_profiles
+
+${colors.bright}📚 Documentation${colors.reset}
+  See docs/DATABASE-MIGRATION-AGENT.md for complete documentation
+            `);
+        };
+        
+        switch(subcommand) {
+            case 'help':
+                showDbHelp();
+                break;
+            case 'migrate':
+            case 'status':
+            case 'generate':
+            case 'rollback':
+                runMigrationCommand(subcommand);
+                break;
+            default:
+                log.error(`Unknown database command: ${subcommand}`);
+                showDbHelp();
+        }
+    },
+
     // Show help and version
     'help': () => {
         console.log(`
