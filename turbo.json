@@ -4,7 +4,8 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", "build/**"],
+      "inputs": ["src/**", "package.json", "tsconfig.json"]
     },
     "dev": {
       "cache": false,
@@ -12,16 +13,21 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "outputs": ["coverage/**"],
+      "inputs": ["src/**", "**/*.test.*", "**/*.spec.*", "jest.config.*"]
     },
     "lint": {
-      "dependsOn": ["^build"]
+      "outputs": [],
+      "inputs": ["src/**", ".eslintrc.*", "eslint.config.*"]
     },
     "format": {
-      "dependsOn": ["^build"]
+      "outputs": [],
+      "inputs": ["src/**", ".prettierrc*", "prettier.config.*"]
     },
     "type-check": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "inputs": ["src/**", "tsconfig.json"]
     },
     "clean": {
       "cache": false
@@ -30,12 +36,15 @@
   "globalDependencies": [
     "**/.env.*local",
     "**/.env",
-    "**/package.json"
+    "**/package.json",
+    "tsconfig.base.json"
   ],
   "globalEnv": [
     "NODE_ENV",
     "DATABASE_URL",
     "ANTHROPIC_API_KEY",
-    "SUPABASE_URL"
+    "SUPABASE_URL",
+    "FLASHFUSION_API_URL",
+    "FLASHFUSION_API_KEY"
   ]
 }
