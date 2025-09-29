@@ -43,6 +43,52 @@ cp .env.example .env
 npm run dev
 ```
 
+## 🎯 Project Milestones
+
+FlashFusion follows a structured milestone-driven development approach with 5 defined phases:
+
+### Current Milestone Status
+```bash
+# View current milestone progress
+npm run ff -- milestone status
+
+# Export milestones for GitHub creation
+npm run ff -- milestone sync
+```
+
+### Development Phases
+- **🔴 Phase 1: Core Platform Setup** (HIGH Priority - 2 weeks)
+  - Foundational monorepo structure
+  - flashfusion-ide integration
+  - Agent orchestration system
+  - Essential packages creation
+
+- **🟡 Phase 2: Enhanced Development** (MEDIUM Priority - 2 weeks)  
+  - Enhanced CLI and development tools
+  - Comprehensive testing framework
+  - UI component library with Storybook
+  - Code generation templates
+
+- **🟢 Phase 3: Production Infrastructure** (LOW Priority - 2 weeks)
+  - CI/CD pipeline implementation
+  - Security and monitoring utilities
+  - Deployment automation
+  - Performance optimization
+
+- **🔧 Phase 4: Repository Integration** (SPECIALIZED - 3 weeks)
+  - Complete ecosystem integration
+  - Memory and research systems
+  - Template repositories
+  - Multi-language wrappers
+
+- **⚡ Phase 5: Quality & Optimization** (CONTINUOUS)
+  - Ongoing code quality improvements
+  - Performance monitoring
+  - Security enhancements
+  - Documentation maintenance
+
+See [docs/MILESTONES.md](./docs/MILESTONES.md) for detailed milestone documentation.
+
 ## 📦 Package Scripts
 
 ### Root Level Commands
