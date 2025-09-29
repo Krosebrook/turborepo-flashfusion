@@ -1,0 +1,60 @@
+{
+  "dataRegions": ["EU", "US", "CA"],
+  "sensitiveDataPatterns": [
+    "email",
+    "password",
+    "ssn|social.security",
+    "credit.card|cc.number",
+    "phone.number",
+    "address",
+    "first.name|last.name|full.name",
+    "birth.date|dob",
+    "ip.address",
+    "user.id|customer.id",
+    "api.key|secret",
+    "token"
+  ],
+  "gdprSettings": {
+    "requireExplicitConsent": true,
+    "dataRetentionMaxDays": 1095,
+    "requirePrivacyPolicy": true,
+    "requireDataProcessingAgreement": true,
+    "requireRightToPortability": true,
+    "requireRightToErasure": true,
+    "requireDataProtectionOfficer": false
+  },
+  "ccpaSettings": {
+    "requireOptOut": true,
+    "requireDataSaleNotice": true,
+    "requirePrivacyRights": true,
+    "businessThreshold": 25000000,
+    "consumerThreshold": 50000,
+    "dataPercentageThreshold": 50
+  },
+  "dataResidency": {
+    "eu": ["FR", "DE", "IE", "NL", "europe-west1", "europe-west3"],
+    "us": ["us-east-1", "us-west-2", "us-central1"],
+    "canada": ["ca-central-1", "northamerica-northeast1"]
+  },
+  "thirdPartyServices": {
+    "approved": [
+      "Supabase",
+      "Vercel",
+      "GitHub"
+    ],
+    "requiresReview": [
+      "OpenAI",
+      "Anthropic",
+      "Google",
+      "Stripe",
+      "Shopify"
+    ],
+    "prohibited": []
+  },
+  "reporting": {
+    "outputFormats": ["json", "txt", "html"],
+    "includeDataMap": true,
+    "includeRecommendations": true,
+    "includeActionPlan": true
+  }
+}
