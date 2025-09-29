@@ -432,6 +432,105 @@ VERCEL_ORG_ID=your-vercel-org-id
         }
     },
 
+    // 📜 License Compliance Commands
+    'license:scan': async () => {
+        log.title('📜 License Compliance Scanner');
+        
+        const { scanAllWorkspaces, generateReport, exportResults } = require('./license-scanner');
+        
+        try {
+            const scanResults = await scanAllWorkspaces();
+            const report = generateReport(scanResults, { detailed: true });
+            
+            // Check for violations
+            if (report.violations.length > 0) {
+                log.error(`Found ${report.violations.length} license violations!`);
+                process.exit(1);
+            } else {
+                log.success('License compliance check passed!');
+            }
+            
+        } catch (error) {
+            log.error(`License scan failed: ${error.message}`);
+            process.exit(1);
+        }
+    },
+
+    'license:report': async () => {
+        log.title('📊 License Compliance Report');
+        
+        const { scanAllWorkspaces, generateReport, exportResults } = require('./license-scanner');
+        const args = process.argv.slice(3);
+        const format = args[0] || 'json';
+        const filename = args[1];
+        
+        try {
+            const scanResults = await scanAllWorkspaces();
+            generateReport(scanResults, { detailed: true });
+            
+            // Export to file
+            const outputFile = exportResults(scanResults, format, filename);
+            log.success(`Report saved to: ${outputFile}`);
+            
+        } catch (error) {
+            log.error(`Report generation failed: ${error.message}`);
+            process.exit(1);
+        }
+    },
+
+    'license:check': async () => {
+        log.title('🔍 License Policy Check');
+        
+        const { scanAllWorkspaces, generateReport } = require('./license-scanner');
+        
+        try {
+            const scanResults = await scanAllWorkspaces();
+            const report = generateReport(scanResults);
+            
+            // Return appropriate exit code
+            if (report.violations.length > 0) {
+                log.error('\n❌ License compliance check FAILED');
+                log.info('Fix violations before proceeding with deployment');
+                process.exit(1);
+            } else {
+                log.success('\n✅ License compliance check PASSED');
+                process.exit(0);
+            }
+            
+        } catch (error) {
+            log.error(`License check failed: ${error.message}`);
+            process.exit(1);
+        }
+    },
+
+    'license:policy': () => {
+        log.title('📋 License Policy Configuration');
+        
+        const { LICENSE_POLICY } = require('./license-scanner');
+        
+        console.log(`${colors.bright}${colors.green}✅ Approved Licenses (Low Risk):${colors.reset}`);
+        LICENSE_POLICY.approved.forEach(license => {
+            console.log(`   • ${license}`);
+        });
+        
+        console.log(`\n${colors.bright}${colors.yellow}⚠️  Conditional Licenses (Medium Risk):${colors.reset}`);
+        LICENSE_POLICY.conditional.forEach(license => {
+            console.log(`   • ${license}`);
+        });
+        
+        console.log(`\n${colors.bright}${colors.red}❌ Restricted Licenses (High Risk):${colors.reset}`);
+        LICENSE_POLICY.restricted.forEach(license => {
+            console.log(`   • ${license}`);
+        });
+        
+        console.log(`\n${colors.bright}${colors.magenta}🔍 Commercial/Proprietary (Manual Review):${colors.reset}`);
+        LICENSE_POLICY.commercial.forEach(license => {
+            console.log(`   • ${license}`);
+        });
+        
+        console.log(`\n${colors.cyan}💡 Tip: Use 'ff license:scan' to check your dependencies${colors.reset}`);
+    },
+
     // Migration commands
     'migrate': () => {
         const subcommand = process.argv[3] || 'help';
