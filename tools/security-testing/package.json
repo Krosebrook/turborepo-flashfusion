@@ -1,0 +1,40 @@
+{
+  "name": "flashfusion-security-chaos-agent",
+  "version": "1.0.0",
+  "description": "Comprehensive security testing suite for FlashFusion APIs including fuzz testing, stress testing, and vulnerability scanning",
+  "main": "test-runner.js",
+  "scripts": {
+    "test": "node test-runner.js",
+    "fuzz": "node security-chaos-agent.js",
+    "stress": "node stress-tester.js",
+    "scan": "node vulnerability-scanner.js",
+    "test:all": "node test-runner.js",
+    "test:fuzz-only": "node test-runner.js --no-stress --no-vuln-scan",
+    "test:stress-only": "node test-runner.js --no-fuzzing --no-vuln-scan",
+    "test:vuln-only": "node test-runner.js --no-fuzzing --no-stress"
+  },
+  "keywords": [
+    "security",
+    "testing",
+    "fuzzing",
+    "penetration-testing",
+    "vulnerability-scanning",
+    "api-testing",
+    "chaos-engineering"
+  ],
+  "author": "FlashFusion Security Team",
+  "license": "MIT",
+  "bin": {
+    "security-chaos-agent": "./test-runner.js",
+    "fuzz-test": "./security-chaos-agent.js",
+    "stress-test": "./stress-tester.js",
+    "vuln-scan": "./vulnerability-scanner.js"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Krosebrook/turborepo-flashfusion"
+  }
+}
