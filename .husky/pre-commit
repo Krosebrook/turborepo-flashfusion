@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+echo "🔍 Running pre-commit checks..."
+node ./scripts/check-commit-size.js
+echo "✅ Pre-commit checks completed"

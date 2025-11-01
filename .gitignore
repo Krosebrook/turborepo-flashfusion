@@ -37,5 +37,6 @@ logs
 .cache/
 .parcel-cache/
 
-# Security reports (contain sensitive vulnerability data)
-security-reports/
+
+#Ignore cursor AI rules
+.cursor\rules\codacy.mdc

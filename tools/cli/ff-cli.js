@@ -432,6 +432,105 @@ VERCEL_ORG_ID=your-vercel-org-id
         }
     },
 
+    // 📜 License Compliance Commands
+    'license:scan': async () => {
+        log.title('📜 License Compliance Scanner');
+        
+        const { scanAllWorkspaces, generateReport, exportResults } = require('./license-scanner');
+        
+        try {
+            const scanResults = await scanAllWorkspaces();
+            const report = generateReport(scanResults, { detailed: true });
+            
+            // Check for violations
+            if (report.violations.length > 0) {
+                log.error(`Found ${report.violations.length} license violations!`);
+                process.exit(1);
+            } else {
+                log.success('License compliance check passed!');
+            }
+            
+        } catch (error) {
+            log.error(`License scan failed: ${error.message}`);
+            process.exit(1);
+        }
+    },
+
+    'license:report': async () => {
+        log.title('📊 License Compliance Report');
+        
+        const { scanAllWorkspaces, generateReport, exportResults } = require('./license-scanner');
+        const args = process.argv.slice(3);
+        const format = args[0] || 'json';
+        const filename = args[1];
+        
+        try {
+            const scanResults = await scanAllWorkspaces();
+            generateReport(scanResults, { detailed: true });
+            
+            // Export to file
+            const outputFile = exportResults(scanResults, format, filename);
+            log.success(`Report saved to: ${outputFile}`);
+            
+        } catch (error) {
+            log.error(`Report generation failed: ${error.message}`);
+            process.exit(1);
+        }
+    },
+
+    'license:check': async () => {
+        log.title('🔍 License Policy Check');
+        
+        const { scanAllWorkspaces, generateReport } = require('./license-scanner');
+        
+        try {
+            const scanResults = await scanAllWorkspaces();
+            const report = generateReport(scanResults);
+            
+            // Return appropriate exit code
+            if (report.violations.length > 0) {
+                log.error('\n❌ License compliance check FAILED');
+                log.info('Fix violations before proceeding with deployment');
+                process.exit(1);
+            } else {
+                log.success('\n✅ License compliance check PASSED');
+                process.exit(0);
+            }
+            
+        } catch (error) {
+            log.error(`License check failed: ${error.message}`);
+            process.exit(1);
+        }
+    },
+
+    'license:policy': () => {
+        log.title('📋 License Policy Configuration');
+        
+        const { LICENSE_POLICY } = require('./license-scanner');
+        
+        console.log(`${colors.bright}${colors.green}✅ Approved Licenses (Low Risk):${colors.reset}`);
+        LICENSE_POLICY.approved.forEach(license => {
+            console.log(`   • ${license}`);
+        });
+        
+        console.log(`\n${colors.bright}${colors.yellow}⚠️  Conditional Licenses (Medium Risk):${colors.reset}`);
+        LICENSE_POLICY.conditional.forEach(license => {
+            console.log(`   • ${license}`);
+        });
+        
+        console.log(`\n${colors.bright}${colors.red}❌ Restricted Licenses (High Risk):${colors.reset}`);
+        LICENSE_POLICY.restricted.forEach(license => {
+            console.log(`   • ${license}`);
+        });
+        
+        console.log(`\n${colors.bright}${colors.magenta}🔍 Commercial/Proprietary (Manual Review):${colors.reset}`);
+        LICENSE_POLICY.commercial.forEach(license => {
+            console.log(`   • ${license}`);
+        });
+        
+        console.log(`\n${colors.cyan}💡 Tip: Use 'ff license:scan' to check your dependencies${colors.reset}`);
+    },
+
     // Migration commands
     'migrate': () => {
         const subcommand = process.argv[3] || 'help';
@@ -566,6 +665,18 @@ ${colors.bright}🔄 Migration & Integration${colors.reset}
   ff migrate [command]       Repository migration commands
   ff validate [command]      Validation and testing commands
   ff docs [command]          Documentation commands
+
+${colors.bright}🧠 RAG System (Semantic Search)${colors.reset}
+  ff rag:build [path]        Build knowledge base from repository
+  ff rag:rebuild [path]      Force rebuild knowledge base
+  ff rag:query <question>    Ask questions about the repository
+  ff rag:search <code>       Search for specific code patterns
+  ff rag:docs <topic>        Get documentation for a topic
+  ff rag:overview           Get repository overview
+  ff rag:stats              Show RAG system statistics
+  ff rag:health             Show RAG system health
+  ff rag:clear              Clear knowledge base
+  ff rag:demo               Run interactive demo
 
 ${colors.bright}🚀 Deployment & Hosting${colors.reset}
   ff:vercel:link             Link Vercel project
@@ -813,6 +924,83 @@ ${colors.bright}🚀 Frameworks:${colors.reset}
         } catch (error) {
             log.error(`List failed: ${error.message}`);
         }
+    },
+
+    // 🧠 RAG System Commands
+    'rag:build': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        const targetPath = process.argv[3] || process.cwd();
+        await ragCli.buildKnowledgeBase(targetPath, false);
+    },
+
+    'rag:rebuild': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        const targetPath = process.argv[3] || process.cwd();
+        await ragCli.buildKnowledgeBase(targetPath, true);
+    },
+
+    'rag:query': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        const query = process.argv.slice(3).join(' ');
+        if (!query) {
+            log.error('Please provide a question to query');
+            return;
+        }
+        await ragCli.queryRepository(query);
+    },
+
+    'rag:search': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        const searchQuery = process.argv.slice(3).join(' ');
+        if (!searchQuery) {
+            log.error('Please provide a search query');
+            return;
+        }
+        await ragCli.searchCode(searchQuery);
+    },
+
+    'rag:docs': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        const topic = process.argv.slice(3).join(' ');
+        if (!topic) {
+            log.error('Please provide a documentation topic');
+            return;
+        }
+        await ragCli.getDocumentation(topic);
+    },
+
+    'rag:overview': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        await ragCli.getOverview();
+    },
+
+    'rag:stats': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        await ragCli.showStats();
+    },
+
+    'rag:health': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        await ragCli.showHealth();
+    },
+
+    'rag:clear': async () => {
+        const RAGCLI = require(path.join(__dirname, '../../packages/rag/cli'));
+        const ragCli = new RAGCLI();
+        await ragCli.clearKnowledgeBase();
+    },
+
+    'rag:demo': async () => {
+        const demo = require(path.join(__dirname, '../../packages/rag/demo'));
+        await demo();
     }
 };
 
