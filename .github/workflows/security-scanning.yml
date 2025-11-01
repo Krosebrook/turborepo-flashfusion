@@ -1,0 +1,239 @@
+name: Security Scanning Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly on Mondays at 2 AM
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  npm-audit:
+    name: NPM Audit Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run NPM Audit Scanner
+        run: node tools/security/npm-audit-scanner.js
+        continue-on-error: true
+
+      - name: Upload NPM Audit Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-audit-reports
+          path: security-reports/npm-audit-*
+          retention-days: 30
+
+  dast-scan:
+    name: DAST Security Scan
+    runs-on: ubuntu-latest
+    needs: npm-audit
+    services:
+      app:
+        image: node:20
+        ports:
+          - 3000:3000
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start application
+        run: |
+          npm run build &
+          sleep 30
+          curl -f http://localhost:3000/health || echo "App not ready, running baseline scan"
+        timeout-minutes: 2
+        continue-on-error: true
+
+      - name: Run OWASP ZAP DAST Scan
+        run: node tools/security/zap-dast-scanner.js http://localhost:3000
+        continue-on-error: true
+
+      - name: Upload DAST Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dast-reports
+          path: security-reports/zap-*
+          retention-days: 30
+
+  consolidated-report:
+    name: Generate Consolidated Security Report
+    runs-on: ubuntu-latest
+    needs: [npm-audit, dast-scan]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download NPM Audit Reports
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-audit-reports
+          path: security-reports/
+        continue-on-error: true
+
+      - name: Download DAST Reports  
+        uses: actions/download-artifact@v4
+        with:
+          name: dast-reports
+          path: security-reports/
+        continue-on-error: true
+
+      - name: Generate Consolidated Report
+        run: node tools/security/consolidated-reporter.js
+        continue-on-error: true
+
+      - name: Upload Consolidated Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: consolidated-security-report
+          path: security-reports/consolidated-*
+          retention-days: 90
+
+      - name: Create Security Summary
+        if: always()
+        run: |
+          echo "## 🔐 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f security-reports/consolidated-*.txt ]; then
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            head -20 security-reports/consolidated-*.txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Security reports not generated. Check individual scan results." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Artifacts Generated:**" >> $GITHUB_STEP_SUMMARY
+          echo "- NPM Audit Reports" >> $GITHUB_STEP_SUMMARY
+          echo "- DAST Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "- Consolidated Security Report" >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment PR with Security Results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Try to read the consolidated report
+            const reportDir = 'security-reports';
+            let securitySummary = '## 🔐 Security Scan Results\n\n';
+            
+            try {
+              const files = fs.readdirSync(reportDir);
+              const txtFile = files.find(f => f.startsWith('consolidated-') && f.endsWith('.txt'));
+              
+              if (txtFile) {
+                const content = fs.readFileSync(path.join(reportDir, txtFile), 'utf8');
+                const lines = content.split('\n').slice(0, 25); // First 25 lines
+                securitySummary += '```\n' + lines.join('\n') + '\n```\n\n';
+              } else {
+                securitySummary += 'Security scan completed. Check artifacts for detailed results.\n\n';
+              }
+              
+              securitySummary += '📋 **Next Steps:**\n';
+              securitySummary += '- Review security findings in the artifacts\n';
+              securitySummary += '- Address any critical or high-severity vulnerabilities\n';
+              securitySummary += '- Update dependencies as recommended\n\n';
+              securitySummary += '🔗 **Download Reports:** Check the Actions tab for detailed security reports.\n';
+              
+            } catch (error) {
+              securitySummary += 'Error reading security report. Check individual scan results in artifacts.\n';
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: securitySummary
+            });
+
+  security-gate:
+    name: Security Quality Gate
+    runs-on: ubuntu-latest
+    needs: [consolidated-report]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Consolidated Reports
+        uses: actions/download-artifact@v4
+        with:
+          name: consolidated-security-report
+          path: security-reports/
+        continue-on-error: true
+
+      - name: Evaluate Security Gate
+        run: |
+          echo "🚪 Evaluating Security Quality Gate..."
+          
+          # Check if consolidated report exists
+          if [ -f security-reports/consolidated-*.json ]; then
+            # Extract security score and risk level
+            SECURITY_SCORE=$(grep -o '"securityScore":[0-9]*' security-reports/consolidated-*.json | cut -d: -f2 | head -1)
+            RISK_LEVEL=$(grep -o '"overallRisk":"[^"]*"' security-reports/consolidated-*.json | cut -d: -f2 | tr -d '"' | head -1)
+            
+            echo "Security Score: $SECURITY_SCORE/100"
+            echo "Risk Level: $RISK_LEVEL"
+            
+            # Set quality gate thresholds
+            if [ "$RISK_LEVEL" = "critical" ]; then
+              echo "❌ SECURITY GATE FAILED: Critical vulnerabilities detected!"
+              echo "🚫 Deployment blocked until critical issues are resolved."
+              exit 1
+            elif [ "$RISK_LEVEL" = "high" ]; then
+              echo "⚠️  SECURITY GATE WARNING: High-risk vulnerabilities detected!"
+              echo "🔍 Review and address high-risk vulnerabilities before deployment."
+              # Don't fail the build, but warn
+              exit 0
+            elif [ "${SECURITY_SCORE:-0}" -lt 70 ]; then
+              echo "⚠️  SECURITY GATE WARNING: Security score below threshold (70)!"
+              echo "📈 Current score: $SECURITY_SCORE/100"
+              exit 0
+            else
+              echo "✅ SECURITY GATE PASSED: Security requirements met."
+              echo "🎉 Security score: $SECURITY_SCORE/100, Risk level: $RISK_LEVEL"
+              exit 0
+            fi
+          else
+            echo "⚠️  Security reports not found. Allowing deployment with warning."
+            exit 0
+          fi

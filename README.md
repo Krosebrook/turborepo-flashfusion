@@ -53,7 +53,33 @@ npm run lint            # Lint all packages
 npm run clean           # Clean all build outputs
 npm run restore-state   # Restore session context
 npm run ff              # Run FlashFusion CLI
+npm run commit-check    # Check staged commit size before committing
 ```
+
+### 🔒 Commit Size Enforcement
+
+This repository enforces atomic commits to maintain code quality:
+
+```bash
+# Automatic enforcement (runs on every commit)
+git commit -m "feat: your changes"    # Size checked automatically
+
+# Manual size checking
+npm run commit-check                  # Check current staged changes
+git commit-size                       # Git alias for size check
+git atomic-add file1.js file2.js     # Stage files and show size
+
+# Commit splitting helpers
+git unstage-all                       # Clear staging area
+git split-commit                      # Undo last commit for splitting
+```
+
+**Size Limits:**
+- 🚨 **Hard limit**: 500 lines changed (blocks commit)
+- ⚠️ **Warning**: 200+ lines changed (allows but warns)
+- ⚠️ **File limit**: 10+ files changed (warning)
+
+**Emergency bypass:** `HUSKY=0 git commit -m "large change"`
 
 ### 🔄 Repository Migration Commands
 ```bash
@@ -163,9 +189,16 @@ npm run deploy
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+3. **Make atomic commits** (follow size limits - see enforcement above)
+4. Use conventional commit format: `feat:`, `fix:`, `docs:`, etc.
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
+
+**Commit Guidelines:**
+- Use conventional commit format: `type(scope): description`
+- Keep commits under 500 lines changed
+- Split large changes into logical atomic commits
+- Use the commit message template: `git commit` (without -m)
 
 ## 📚 Documentation
 
@@ -174,6 +207,9 @@ npm run deploy
 - [Repository Requirements](./REPOSITORY-REQUIREMENTS.md)
 - [Best Practices](./knowledge-base/best-practices.md)
 - [AI Agent Patterns](./knowledge-base/agent-patterns.js)
+- [Commit Workflow Guide](./docs/COMMIT-WORKFLOW.md)
+- [AI Development Guide](./CLAUDE.md)
+- [Repository Guidelines](./AGENTS.md)
 
 ### Migration Documentation
 - [**Monorepo Integration Plan**](./docs/MONOREPO-INTEGRATION-PLAN.md) - Complete integration strategy for all Krosebrook repositories
