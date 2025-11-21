@@ -11,6 +11,9 @@ dist/
 build/
 out/
 
+# Build artifacts (from Build & Package Agent)
+.build-artifacts/
+
 # Environment files
 .env
 .env.local
