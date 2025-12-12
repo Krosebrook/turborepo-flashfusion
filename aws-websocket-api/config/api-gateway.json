@@ -1,0 +1,32 @@
+{
+  "apiDetails": {
+    "name": "AWS_WEBSOCKET_API",
+    "description": "WebSocket API for real-time communication",
+    "protocolType": "WEBSOCKET",
+    "version": "1.0",
+    "ipAddressType": "IPV4",
+    "routeSelectionExpression": "$request.body.action",
+    "tags": {
+      "Environment": "development",
+      "Project": "FlashFusion",
+      "Type": "WebSocket"
+    }
+  },
+  "corsConfiguration": {
+    "allowCredentials": true,
+    "allowHeaders": ["Content-Type", "Authorization"],
+    "allowMethods": ["GET", "POST", "OPTIONS"],
+    "allowOrigins": ["*"],
+    "maxAge": 86400
+  },
+  "throttleSettings": {
+    "burstLimit": 5000,
+    "rateLimit": 2000
+  },
+  "defaultRouteSettings": {
+    "throttlingBurstLimit": 5000,
+    "throttlingRateLimit": 2000,
+    "dataTraceEnabled": true,
+    "loggingLevel": "INFO"
+  }
+}

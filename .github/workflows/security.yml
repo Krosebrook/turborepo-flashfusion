@@ -1,0 +1,308 @@
+name: Security & Compliance
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily security scan at 02:00 UTC
+  pull_request:
+    paths:
+      - 'package*.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/security.yml'
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      scan-level:
+        description: 'Security scan level'
+        required: false
+        default: 'moderate'
+        type: choice
+        options:
+          - info
+          - low
+          - moderate
+          - high
+          - critical
+
+env:
+  SECURITY_SCAN_TIMEOUT: 30
+
+jobs:
+  # Dependency Vulnerability Scanning
+  dependency-scan:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run PNPM audit
+        id: pnpm-audit
+        run: |
+          echo "## PNPM Audit Results" >> $GITHUB_STEP_SUMMARY
+          pnpm audit --audit-level=${{ github.event.inputs.scan-level || 'moderate' }} 2>&1 | tee audit-results.txt
+          audit_exit_code=${PIPESTATUS[0]}
+          echo "Audit exit code: $audit_exit_code"
+
+          if [ $audit_exit_code -ne 0 ]; then
+            echo "::warning::Security vulnerabilities detected in dependencies"
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            tail -n 50 audit-results.txt >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No vulnerabilities detected" >> $GITHUB_STEP_SUMMARY
+          fi
+        continue-on-error: true
+
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level=${{ github.event.inputs.scan-level || 'moderate' }} 2>&1 | tee npm-audit-results.txt || true
+          npm audit fix --dry-run 2>&1 | tee npm-audit-fix-dry.txt || true
+
+      - name: Check for known vulnerabilities with OSV Scanner
+        uses: google/osv-scanner-action@v1
+        with:
+          scan-args: |
+            --lockfile=pnpm-lock.yaml
+            --format=json
+            --output=osv-results.json
+        continue-on-error: true
+
+      - name: Upload dependency scan results
+        uses: actions/upload-artifact@v3
+        with:
+          name: dependency-scan-results
+          path: |
+            audit-results.txt
+            npm-audit-results.txt
+            npm-audit-fix-dry.txt
+            osv-results.json
+          retention-days: 30
+
+  # Static Application Security Testing (SAST)
+  sast-scan:
+    name: SAST Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript, typescript
+          queries: security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:javascript"
+
+      - name: Run Semgrep SAST
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >
+            p/security-audit
+            p/owasp-top-ten
+            p/typescript
+            p/javascript
+            p/nodejs
+        continue-on-error: true
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ github.repository_owner }}_${{ github.event.repository.name }}
+            -Dsonar.organization=${{ github.repository_owner }}
+        continue-on-error: true
+
+  # Secret Scanning
+  secret-scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: Gitleaks Secret Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Detect secrets with detect-secrets
+        run: |
+          pip install detect-secrets
+          detect-secrets scan --baseline .secrets.baseline 2>&1 | tee secrets-scan.txt || true
+          detect-secrets audit .secrets.baseline 2>&1 | tee -a secrets-scan.txt || true
+
+  # Container Security (if using Docker)
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('**/Dockerfile') != '' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy container scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
+
+      - name: Dockerfile linting with Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: warning
+        continue-on-error: true
+
+  # License Compliance Check
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check licenses
+        run: |
+          npx license-checker --summary --excludePrivatePackages --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;CC0-1.0" 2>&1 | tee license-report.txt || true
+          echo "## License Compliance Report" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          head -n 30 license-report.txt >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # Security Policy Compliance
+  security-policy:
+    name: Security Policy Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for security policy
+        run: |
+          if [ ! -f "SECURITY.md" ]; then
+            echo "::warning::SECURITY.md file is missing. Please add a security policy."
+            echo "## Security Policy" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ No SECURITY.md file found. Consider adding one with:" >> $GITHUB_STEP_SUMMARY
+            echo "- Security contact information" >> $GITHUB_STEP_SUMMARY
+            echo "- Vulnerability reporting process" >> $GITHUB_STEP_SUMMARY
+            echo "- Security update policy" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ SECURITY.md exists" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check for .env.example
+        run: |
+          if [ ! -f ".env.example" ]; then
+            echo "::warning::.env.example file is missing"
+          fi
+
+  # Generate Security Report
+  security-report:
+    name: Security Report Summary
+    needs: [dependency-scan, sast-scan, secret-scan, container-scan, license-check, security-policy]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate consolidated security report
+        run: |
+          echo "# Security Scan Report" > security-report.md
+          echo "Date: $(date)" >> security-report.md
+          echo "Repository: ${{ github.repository }}" >> security-report.md
+          echo "Branch: ${{ github.ref_name }}" >> security-report.md
+          echo "Commit: ${{ github.sha }}" >> security-report.md
+          echo "" >> security-report.md
+
+          echo "## Scan Results Summary" >> security-report.md
+          echo "| Check | Status |" >> security-report.md
+          echo "|-------|--------|" >> security-report.md
+
+          # Check job statuses
+          if [ "${{ needs.dependency-scan.result }}" == "success" ]; then
+            echo "| Dependency Scan | ✅ Passed |" >> security-report.md
+          else
+            echo "| Dependency Scan | ❌ Failed |" >> security-report.md
+          fi
+
+          if [ "${{ needs.sast-scan.result }}" == "success" ]; then
+            echo "| SAST Scan | ✅ Passed |" >> security-report.md
+          else
+            echo "| SAST Scan | ⚠️ Issues Found |" >> security-report.md
+          fi
+
+          if [ "${{ needs.secret-scan.result }}" == "success" ]; then
+            echo "| Secret Scan | ✅ Passed |" >> security-report.md
+          else
+            echo "| Secret Scan | ❌ Failed |" >> security-report.md
+          fi
+
+          if [ "${{ needs.license-check.result }}" == "success" ]; then
+            echo "| License Check | ✅ Compliant |" >> security-report.md
+          else
+            echo "| License Check | ⚠️ Review Required |" >> security-report.md
+          fi
+
+          cat security-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-report
+          path: security-report.md
+          retention-days: 90

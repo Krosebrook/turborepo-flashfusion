@@ -1,0 +1,226 @@
+name: CI/CD Pipeline
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, develop, release/*]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8'
+  CACHE_KEY: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+  ARTIFACTS_RETENTION_DAYS: 30
+
+jobs:
+  # Code Quality Gates
+  quality-gates:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.cache.outputs.cache-key }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for better analysis
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Cache dependencies
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pnpm-store
+            node_modules
+          key: ${{ env.CACHE_KEY }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+          echo "cache-key=${{ env.CACHE_KEY }}" >> $GITHUB_OUTPUT
+
+      - name: Run linting
+        id: lint
+        run: |
+          pnpm lint 2>&1 | tee lint-results.txt
+          echo "## Lint Results" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          tail -n 20 lint-results.txt >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check formatting
+        if: always()
+        run: |
+          pnpm format:check || (echo "::warning::Code formatting issues detected. Run 'pnpm format' locally." && exit 1)
+
+      - name: Type checking
+        if: always()
+        run: |
+          pnpm type-check 2>&1 | tee type-check-results.txt || true
+          if grep -q "error" type-check-results.txt; then
+            echo "::error::Type errors detected"
+            exit 1
+          fi
+
+      - name: Upload quality reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: quality-reports
+          path: |
+            lint-results.txt
+            type-check-results.txt
+          retention-days: ${{ env.ARTIFACTS_RETENTION_DAYS }}
+
+  # Unit and Integration Tests
+  test:
+    name: Test Suite
+    needs: [quality-gates]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: ['18', '20', '21']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'pnpm'
+
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pnpm-store
+            node_modules
+          key: ${{ needs.quality-gates.outputs.cache-key }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run unit tests
+        run: |
+          pnpm test:unit --coverage --ci --reporters=default --reporters=jest-junit
+        env:
+          JEST_JUNIT_OUTPUT_DIR: ./test-results
+          JEST_JUNIT_OUTPUT_NAME: junit-${{ matrix.os }}-node${{ matrix.node }}.xml
+
+      - name: Run integration tests
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          pnpm test:integration --ci
+        timeout-minutes: 10
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.os }}-node${{ matrix.node }}
+          path: |
+            test-results/
+            coverage/
+          retention-days: ${{ env.ARTIFACTS_RETENTION_DAYS }}
+
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.node == '20'
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  # Build and Package
+  build:
+    name: Build & Package
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup build environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        run: |
+          pnpm build
+          echo "Build completed at $(date)" >> build-info.txt
+          echo "Commit: ${{ github.sha }}" >> build-info.txt
+          echo "Branch: ${{ github.ref_name }}" >> build-info.txt
+
+      - name: Generate SBOM (Software Bill of Materials)
+        run: |
+          npx @cyclonedx/cyclonedx-npm --output-file sbom.json
+          echo "SBOM generated successfully" >> build-info.txt
+
+      - name: Create build artifact
+        run: |
+          tar -czf build-artifact.tar.gz dist/ build-info.txt sbom.json
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            build-artifact.tar.gz
+            dist/
+            build-info.txt
+            sbom.json
+          retention-days: ${{ env.ARTIFACTS_RETENTION_DAYS }}
+
+      - name: Generate build report
+        run: |
+          echo "## Build Report" >> $GITHUB_STEP_SUMMARY
+          echo "- Build Date: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit SHA: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Node Version: ${{ env.NODE_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Build Status: ✅ Success" >> $GITHUB_STEP_SUMMARY

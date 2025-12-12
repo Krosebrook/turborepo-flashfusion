@@ -1,0 +1,325 @@
+name: Performance Monitoring
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  push:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 6 * * 1'  # Weekly on Monday at 6 AM UTC
+  workflow_dispatch:
+
+jobs:
+  # Bundle Size Analysis
+  bundle-analysis:
+    name: Bundle Size Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref || 'main' }}
+          path: base
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd base && npm ci
+
+      - name: Build current branch
+        run: |
+          npm run build
+          du -sh dist/ > current-size.txt
+
+      - name: Build base branch
+        run: |
+          cd base
+          npm run build
+          du -sh dist/ > ../base-size.txt
+
+      - name: Compare bundle sizes
+        run: |
+          echo "## Bundle Size Comparison" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Current | $(cat current-size.txt | cut -f1) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Base | $(cat base-size.txt | cut -f1) |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Analyze with webpack-bundle-analyzer
+        run: |
+          npx webpack-bundle-analyzer dist/stats.json dist/ -m static -r bundle-report.html -O
+        continue-on-error: true
+
+      - name: Upload bundle analysis
+        uses: actions/upload-artifact@v3
+        with:
+          name: bundle-analysis
+          path: |
+            bundle-report.html
+            current-size.txt
+            base-size.txt
+
+  # Lighthouse CI
+  lighthouse:
+    name: Lighthouse Performance Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          urls: |
+            http://localhost:3000
+            http://localhost:3000/api
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          runs: 3
+          configPath: './lighthouserc.json'
+
+      - name: Format Lighthouse results
+        run: |
+          echo "## Lighthouse Performance Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Score |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Performance | ${LIGHTHOUSE_PERFORMANCE:-N/A} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Accessibility | ${LIGHTHOUSE_ACCESSIBILITY:-N/A} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Best Practices | ${LIGHTHOUSE_BEST_PRACTICES:-N/A} |" >> $GITHUB_STEP_SUMMARY
+          echo "| SEO | ${LIGHTHOUSE_SEO:-N/A} |" >> $GITHUB_STEP_SUMMARY
+
+  # Load Testing
+  load-testing:
+    name: Load Testing with k6
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Run load tests
+        run: |
+          cat > load-test.js << 'EOF'
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+
+          export let options = {
+            stages: [
+              { duration: '30s', target: 20 },
+              { duration: '1m', target: 100 },
+              { duration: '30s', target: 0 },
+            ],
+            thresholds: {
+              http_req_duration: ['p(95)<500'],
+              http_req_failed: ['rate<0.1'],
+            },
+          };
+
+          export default function () {
+            let response = http.get('http://localhost:3000');
+            check(response, {
+              'status is 200': (r) => r.status === 200,
+              'response time < 500ms': (r) => r.timings.duration < 500,
+            });
+            sleep(1);
+          }
+          EOF
+
+          k6 run --out json=load-test-results.json load-test.js || true
+
+      - name: Upload load test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: load-test-results
+          path: load-test-results.json
+
+  # Memory Profiling
+  memory-profiling:
+    name: Memory Usage Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Profile memory usage
+        run: |
+          cat > memory-test.js << 'EOF'
+          const v8 = require('v8');
+          const { performance } = require('perf_hooks');
+
+          function profileMemory() {
+            const startMemory = process.memoryUsage();
+            const startTime = performance.now();
+
+            // Run your application code here
+            require('./dist/index.js');
+
+            const endTime = performance.now();
+            const endMemory = process.memoryUsage();
+
+            const heapStats = v8.getHeapStatistics();
+
+            console.log('Memory Profile Results:');
+            console.log('------------------------');
+            console.log(`Execution Time: ${endTime - startTime}ms`);
+            console.log(`RSS Delta: ${(endMemory.rss - startMemory.rss) / 1024 / 1024}MB`);
+            console.log(`Heap Used Delta: ${(endMemory.heapUsed - startMemory.heapUsed) / 1024 / 1024}MB`);
+            console.log(`Total Heap Size: ${heapStats.total_heap_size / 1024 / 1024}MB`);
+            console.log(`Heap Limit: ${heapStats.heap_size_limit / 1024 / 1024}MB`);
+          }
+
+          profileMemory();
+          EOF
+
+          node --expose-gc --max-old-space-size=4096 memory-test.js > memory-profile.txt 2>&1
+
+      - name: Generate memory report
+        run: |
+          echo "## Memory Usage Report" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          cat memory-profile.txt >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for memory leaks
+        run: |
+          node --expose-gc --trace-gc dist/index.js 2>&1 | grep -i "mark-sweep" | tail -10 > gc-trace.txt
+          echo "## Garbage Collection Trace" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          cat gc-trace.txt >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # Performance Regression Detection
+  performance-regression:
+    name: Performance Regression Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run benchmarks on current branch
+        run: |
+          npm ci
+          npm run benchmark > current-benchmark.txt 2>&1 || echo "No benchmark script"
+
+      - name: Run benchmarks on base branch
+        run: |
+          cd base
+          npm ci
+          npm run benchmark > ../base-benchmark.txt 2>&1 || echo "No benchmark script"
+
+      - name: Compare performance
+        run: |
+          echo "## Performance Comparison" >> $GITHUB_STEP_SUMMARY
+          echo "### Current Branch" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          tail -20 current-benchmark.txt >> $GITHUB_STEP_SUMMARY || echo "No benchmark results"
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "### Base Branch" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          tail -20 base-benchmark.txt >> $GITHUB_STEP_SUMMARY || echo "No benchmark results"
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const comment = `
+            ## Performance Analysis Report
+
+            Bundle size and performance metrics have been analyzed for this PR.
+            Please check the workflow summary for detailed results.
+
+            [View Full Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # Generate Performance Report
+  performance-report:
+    name: Consolidate Performance Report
+    needs: [bundle-analysis, lighthouse, load-testing, memory-profiling]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate comprehensive report
+        run: |
+          echo "# Performance Report" > performance-report.md
+          echo "Date: $(date)" >> performance-report.md
+          echo "Commit: ${{ github.sha }}" >> performance-report.md
+          echo "" >> performance-report.md
+
+          echo "## Summary" >> performance-report.md
+          echo "| Check | Status |" >> performance-report.md
+          echo "|-------|--------|" >> performance-report.md
+          echo "| Bundle Analysis | ${{ needs.bundle-analysis.result }} |" >> performance-report.md
+          echo "| Lighthouse | ${{ needs.lighthouse.result }} |" >> performance-report.md
+          echo "| Load Testing | ${{ needs.load-testing.result }} |" >> performance-report.md
+          echo "| Memory Profiling | ${{ needs.memory-profiling.result }} |" >> performance-report.md
+
+          cat performance-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload final report
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-report
+          path: performance-report.md
+          retention-days: 30

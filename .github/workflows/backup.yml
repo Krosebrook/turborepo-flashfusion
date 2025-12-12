@@ -1,0 +1,14 @@
+name: Backup
+
+# Weekly backups of data. Adjust schedule and script based on your data store.
+on:
+  schedule:
+    - cron: '0 3 * * 0'  # every Sunday at 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/backup.sh

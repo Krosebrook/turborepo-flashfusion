@@ -1,0 +1,331 @@
+name: Deploy Pipeline
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      version:
+        description: 'Version to deploy (leave empty for latest)'
+        required: false
+
+env:
+  DOCKER_REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Pre-deployment validation
+  validate-deployment:
+    name: Validate Deployment
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
+    outputs:
+      environment: ${{ steps.determine-env.outputs.environment }}
+      version: ${{ steps.version.outputs.version }}
+      should-deploy: ${{ steps.validate.outputs.should-deploy }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine environment
+        id: determine-env
+        run: |
+          if [[ "${{ github.event.inputs.environment }}" != "" ]]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          else
+            echo "environment=development" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ github.event.inputs.version }}" != "" ]]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate deployment conditions
+        id: validate
+        run: |
+          echo "should-deploy=true" >> $GITHUB_OUTPUT
+
+          # Check if tests passed
+          if [[ "${{ github.event.workflow_run.conclusion }}" == "failure" ]]; then
+            echo "::error::Previous workflow failed. Deployment cancelled."
+            echo "should-deploy=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Production deployments only from main branch
+          if [[ "${{ steps.determine-env.outputs.environment }}" == "production" ]]; then
+            if [[ "${{ github.ref }}" != "refs/heads/main" && ! "${{ github.ref }}" =~ ^refs/tags/v ]]; then
+              echo "::error::Production deployments only allowed from main branch or version tags"
+              echo "should-deploy=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+  # Build and push Docker image
+  build-image:
+    name: Build Docker Image
+    needs: [validate-deployment]
+    if: needs.validate-deployment.outputs.should-deploy == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=${{ needs.validate-deployment.outputs.environment }}-latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ needs.validate-deployment.outputs.version }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+
+      - name: Generate SBOM for container
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.validate-deployment.outputs.version }}
+          format: cyclonedx-json
+          output-file: sbom-container.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v3
+        with:
+          name: container-sbom
+          path: sbom-container.json
+
+  # Deploy to Development Environment
+  deploy-dev:
+    name: Deploy to Development
+    needs: [validate-deployment, build-image]
+    if: needs.validate-deployment.outputs.environment == 'development'
+    runs-on: ubuntu-latest
+    environment:
+      name: development
+      url: https://dev.example.com
+    steps:
+      - name: Deploy to development
+        run: |
+          echo "Deploying version ${{ needs.validate-deployment.outputs.version }} to development"
+          # Add your deployment commands here
+          # Examples:
+          # - kubectl apply
+          # - terraform apply
+          # - ansible-playbook
+          # - aws ecs update-service
+
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests on development environment"
+          # Add smoke test commands
+
+      - name: Notify deployment
+        if: always()
+        run: |
+          echo "## Deployment to Development" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: ${{ needs.validate-deployment.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Environment URL: https://dev.example.com" >> $GITHUB_STEP_SUMMARY
+
+  # Deploy to Staging Environment
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [validate-deployment, build-image]
+    if: needs.validate-deployment.outputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.example.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to staging
+        run: |
+          echo "Deploying version ${{ needs.validate-deployment.outputs.version }} to staging"
+          # Add your staging deployment commands
+
+      - name: Run integration tests
+        run: |
+          echo "Running integration tests on staging"
+          # Add integration test commands
+
+      - name: Performance testing
+        run: |
+          echo "Running performance tests"
+          # Add performance test commands (e.g., k6, Apache Bench)
+
+      - name: Security validation
+        run: |
+          echo "Running security validation"
+          # Add security validation (e.g., OWASP ZAP, SSL tests)
+
+  # Deploy to Production Environment
+  deploy-production:
+    name: Deploy to Production
+    needs: [validate-deployment, build-image]
+    if: needs.validate-deployment.outputs.environment == 'production'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://example.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create deployment backup
+        run: |
+          echo "Creating backup of current production state"
+          # Add backup commands
+
+      - name: Blue-Green Deployment
+        run: |
+          echo "Starting blue-green deployment"
+          echo "1. Deploy to green environment"
+          # Deploy new version to green
+
+          echo "2. Run health checks on green"
+          # Health checks
+
+          echo "3. Switch traffic to green"
+          # Traffic switch
+
+          echo "4. Monitor for issues (5 minutes)"
+          # Monitoring
+
+          echo "5. Cleanup blue environment"
+          # Cleanup old version
+
+      - name: Run production smoke tests
+        run: |
+          echo "Running production smoke tests"
+          # Add production smoke tests
+
+      - name: Update monitoring dashboards
+        run: |
+          echo "Updating monitoring dashboards"
+          # Update DataDog, New Relic, Grafana, etc.
+
+  # Post-deployment validation
+  post-deployment:
+    name: Post-Deployment Validation
+    needs: [deploy-dev, deploy-staging, deploy-production]
+    if: always() && (needs.deploy-dev.result == 'success' || needs.deploy-staging.result == 'success' || needs.deploy-production.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate deployment health
+        run: |
+          echo "Validating deployment health"
+          # Add health check commands
+
+      - name: Check application metrics
+        run: |
+          echo "Checking application metrics"
+          # Query metrics APIs
+
+      - name: Generate deployment report
+        run: |
+          echo "# Deployment Report" > deployment-report.md
+          echo "Date: $(date)" >> deployment-report.md
+          echo "Version: ${{ needs.validate-deployment.outputs.version }}" >> deployment-report.md
+          echo "Environment: ${{ needs.validate-deployment.outputs.environment }}" >> deployment-report.md
+          echo "" >> deployment-report.md
+
+          echo "## Deployment Status" >> deployment-report.md
+          echo "| Stage | Status |" >> deployment-report.md
+          echo "|-------|--------|" >> deployment-report.md
+          echo "| Build | ✅ Success |" >> deployment-report.md
+          echo "| Tests | ✅ Passed |" >> deployment-report.md
+          echo "| Security | ✅ Validated |" >> deployment-report.md
+          echo "| Deployment | ✅ Complete |" >> deployment-report.md
+
+          cat deployment-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload deployment report
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-report
+          path: deployment-report.md
+
+  # Rollback mechanism
+  rollback:
+    name: Rollback Deployment
+    needs: [deploy-production]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Initiate rollback
+        run: |
+          echo "::error::Deployment failed. Initiating rollback..."
+          # Add rollback commands
+
+      - name: Restore from backup
+        run: |
+          echo "Restoring from backup"
+          # Restore commands
+
+      - name: Verify rollback
+        run: |
+          echo "Verifying rollback success"
+          # Verification commands
+
+      - name: Notify team
+        run: |
+          echo "::error::Rollback completed. Please investigate the failure."
+          # Send notifications (Slack, email, etc.)

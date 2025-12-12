@@ -1,0 +1,73 @@
+{
+  "stages": {
+    "development": {
+      "stageName": "dev",
+      "description": "Development stage for testing",
+      "deploymentDescription": "Development deployment",
+      "variables": {
+        "environment": "development",
+        "logLevel": "DEBUG"
+      },
+      "throttleSettings": {
+        "burstLimit": 1000,
+        "rateLimit": 500
+      },
+      "accessLogSettings": {
+        "destinationArn": "arn:aws:logs:us-east-1:ACCOUNT_ID:log-group:websocket-api-dev-logs",
+        "format": "{\"requestId\":\"$context.requestId\",\"ip\":\"$context.identity.sourceIp\",\"requestTime\":\"$context.requestTime\",\"routeKey\":\"$context.routeKey\",\"status\":\"$context.status\"}"
+      },
+      "defaultRouteSettings": {
+        "dataTraceEnabled": true,
+        "loggingLevel": "INFO",
+        "throttlingBurstLimit": 1000,
+        "throttlingRateLimit": 500
+      }
+    },
+    "staging": {
+      "stageName": "staging",
+      "description": "Staging stage for pre-production testing",
+      "deploymentDescription": "Staging deployment",
+      "variables": {
+        "environment": "staging",
+        "logLevel": "INFO"
+      },
+      "throttleSettings": {
+        "burstLimit": 2000,
+        "rateLimit": 1000
+      },
+      "accessLogSettings": {
+        "destinationArn": "arn:aws:logs:us-east-1:ACCOUNT_ID:log-group:websocket-api-staging-logs",
+        "format": "{\"requestId\":\"$context.requestId\",\"ip\":\"$context.identity.sourceIp\",\"requestTime\":\"$context.requestTime\",\"routeKey\":\"$context.routeKey\",\"status\":\"$context.status\"}"
+      },
+      "defaultRouteSettings": {
+        "dataTraceEnabled": true,
+        "loggingLevel": "INFO",
+        "throttlingBurstLimit": 2000,
+        "throttlingRateLimit": 1000
+      }
+    },
+    "production": {
+      "stageName": "prod",
+      "description": "Production stage",
+      "deploymentDescription": "Production deployment",
+      "variables": {
+        "environment": "production",
+        "logLevel": "WARN"
+      },
+      "throttleSettings": {
+        "burstLimit": 5000,
+        "rateLimit": 2000
+      },
+      "accessLogSettings": {
+        "destinationArn": "arn:aws:logs:us-east-1:ACCOUNT_ID:log-group:websocket-api-prod-logs",
+        "format": "{\"requestId\":\"$context.requestId\",\"ip\":\"$context.identity.sourceIp\",\"requestTime\":\"$context.requestTime\",\"routeKey\":\"$context.routeKey\",\"status\":\"$context.status\"}"
+      },
+      "defaultRouteSettings": {
+        "dataTraceEnabled": false,
+        "loggingLevel": "WARN", 
+        "throttlingBurstLimit": 5000,
+        "throttlingRateLimit": 2000
+      }
+    }
+  }
+}

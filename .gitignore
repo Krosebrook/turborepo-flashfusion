@@ -1,0 +1,281 @@
+# =============================================================================
+# COMPREHENSIVE GITIGNORE FOR HOME DIRECTORY REPOSITORY
+# =============================================================================
+# WARNING: This repo was initialized at user home directory. This gitignore
+# is designed to prevent personal/system files from being tracked.
+# =============================================================================
+
+# =============================================================================
+# SENSITIVE DIRECTORIES - NEVER TRACK
+# =============================================================================
+.aws/
+.ssh/
+.gnupg/
+.password-store/
+.credentials/
+.secrets/
+.npmrc
+.pypirc
+.netrc
+
+# =============================================================================
+# PERSONAL USER DIRECTORIES - NEVER TRACK
+# =============================================================================
+Desktop/
+Documents/
+Downloads/
+Music/
+Pictures/
+Videos/
+Contacts/
+Favorites/
+Links/
+Saved Games/
+Searches/
+3D Objects/
+OneDrive/
+Dropbox/
+
+# =============================================================================
+# WINDOWS SYSTEM/APPLICATION DATA
+# =============================================================================
+AppData/
+Application Data/
+Local Settings/
+NTUSER.DAT*
+ntuser.dat*
+*.lnk
+
+# =============================================================================
+# DEVELOPMENT TOOL CACHES AND DATA
+# =============================================================================
+# Package managers
+.bun/
+.npm/
+.yarn/
+.pnpm/
+.pnpm-store/
+node_modules/
+
+# Python
+.pyenv/
+.conda/
+.virtualenvs/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Go
+go/
+
+# Rust
+.cargo/
+.rustup/
+
+# Ruby
+.gem/
+.rbenv/
+.rvm/
+
+# Java
+.m2/
+.gradle/
+.android/
+
+# .NET
+.nuget/
+.dotnet/
+
+# =============================================================================
+# IDE AND EDITOR DATA
+# =============================================================================
+.vscode/
+.vscode-server/
+.cursor/
+.kiro/
+.idea/
+.eclipse/
+.atom/
+.emacs.d/
+
+# =============================================================================
+# AI AND ML TOOL DIRECTORIES
+# =============================================================================
+.ai-router/
+.aitk/
+.altimate/
+.autogenstudio/
+.boltai/
+.claude/
+.continue/
+.codeium/
+.copilot/
+.tabnine/
+
+# =============================================================================
+# CLOUD AND DEVOPS TOOLS
+# =============================================================================
+.azure/
+.google/
+.config/gcloud/
+.docker/
+.kubernetes/
+.kube/
+.terraform/
+.pulumi/
+.encore/
+
+# =============================================================================
+# BROWSER AND APPLICATION CACHES
+# =============================================================================
+.cache/
+.local/
+.thumbnails/
+
+# =============================================================================
+# BUILD AND DEPENDENCY DIRECTORIES
+# =============================================================================
+dist/
+build/
+out/
+target/
+bin/
+obj/
+*.egg-info/
+
+# =============================================================================
+# PACKAGE MANAGER CACHES
+# =============================================================================
+.chocolatey/
+scoop/
+
+# =============================================================================
+# CONSOLE AND TERMINAL TOOLS
+# =============================================================================
+.console-ninja/
+.bash_history
+.zsh_history
+.python_history
+.node_repl_history
+.lesshst
+.wget-hsts
+
+# =============================================================================
+# PROFILE AND CONFIG FILES
+# =============================================================================
+.bashrc
+.bash_profile
+.profile
+.zshrc
+.zprofile
+.gitconfig
+
+# =============================================================================
+# MISCELLANEOUS TOOL DIRECTORIES
+# =============================================================================
+.FlashFusion-Projects/
+.IntelliJIdea*/
+.WebStorm*/
+.PhpStorm*/
+.notion-mcp-server/
+PostgreSQL/
+
+# =============================================================================
+# STANDARD DEVELOPMENT IGNORES
+# =============================================================================
+
+# Environment files (except examples)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing and coverage
+coverage/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.tmp/
+.temp/
+
+# Security files
+*.key
+*.pem
+*.p12
+*.crt
+*.cer
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# =============================================================================
+# EXPLICIT INCLUDES (Project files to track)
+# =============================================================================
+# Use negation patterns (!) to explicitly include project directories
+# Example: !turborepo-flashfusion/
+# Example: !my-project/
+
+# Project documentation files at root
+!CLAUDE.md
+!AGENTS.md
+!PROGRESS.md
+!TODO.md
+!DECISIONS.md
+!FOUND.md
+!SECURITY.md
+!SECURITY_FIXES.md
+!CHECKPOINT*.md
+!README.md
+!LICENSE*
+
+# Project configuration files
+!.gitignore
+!.gitattributes
+!.env.example
+
+# GitHub workflows and configs
+!.github/
+.github/**
+!.github/workflows/
+!.github/CODEOWNERS
+!.github/FUNDING.yml
+
+# Main project directories
+!turborepo-flashfusion/
+!server/
+!plugins/
+!docs/
+
+# =============================================================================
+# GIT LFS TRACKED FILES (handled separately)
+# =============================================================================
+# Large binary files should be in .gitattributes with LFS tracking

@@ -1,0 +1,54 @@
+{
+  "routes": [
+    {
+      "routeKey": "$connect",
+      "routeDescription": "Handle WebSocket connection establishment",
+      "authorizationType": "NONE",
+      "operationName": "ConnectRoute",
+      "target": "integrations/connect-integration"
+    },
+    {
+      "routeKey": "$disconnect",
+      "routeDescription": "Handle WebSocket disconnection",
+      "authorizationType": "NONE", 
+      "operationName": "DisconnectRoute",
+      "target": "integrations/disconnect-integration"
+    },
+    {
+      "routeKey": "$default",
+      "routeDescription": "Default route for unmatched requests",
+      "authorizationType": "NONE",
+      "operationName": "DefaultRoute",
+      "target": "integrations/default-integration"
+    },
+    {
+      "routeKey": "sendMessage",
+      "routeDescription": "Send message to connected clients",
+      "authorizationType": "NONE",
+      "operationName": "SendMessageRoute",
+      "target": "integrations/send-message-integration"
+    },
+    {
+      "routeKey": "broadcast",
+      "routeDescription": "Broadcast message to all connected clients",
+      "authorizationType": "NONE",
+      "operationName": "BroadcastRoute", 
+      "target": "integrations/broadcast-integration"
+    },
+    {
+      "routeKey": "joinRoom",
+      "routeDescription": "Join a specific room/channel",
+      "authorizationType": "NONE",
+      "operationName": "JoinRoomRoute",
+      "target": "integrations/join-room-integration"
+    },
+    {
+      "routeKey": "leaveRoom", 
+      "routeDescription": "Leave a specific room/channel",
+      "authorizationType": "NONE",
+      "operationName": "LeaveRoomRoute",
+      "target": "integrations/leave-room-integration"
+    }
+  ],
+  "routeSelectionExpression": "$request.body.action"
+}

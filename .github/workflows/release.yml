@@ -1,0 +1,292 @@
+name: Release Management
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release-type:
+        description: 'Release type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  # Prepare release
+  prepare-release:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      new-version: ${{ steps.version.outputs.new-version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+      release-notes: ${{ steps.notes.outputs.release-notes }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine version bump
+        id: version
+        run: |
+          # Get current version from package.json
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+
+          # Determine release type
+          if [[ "${{ github.event.inputs.release-type }}" != "" ]]; then
+            RELEASE_TYPE="${{ github.event.inputs.release-type }}"
+          else
+            # Auto-determine based on commit messages
+            if git log -1 --pretty=%B | grep -q "BREAKING CHANGE\|!:"; then
+              RELEASE_TYPE="major"
+            elif git log -1 --pretty=%B | grep -q "^feat"; then
+              RELEASE_TYPE="minor"
+            else
+              RELEASE_TYPE="patch"
+            fi
+          fi
+
+          echo "Release type: $RELEASE_TYPE"
+
+          # Calculate new version
+          npm version $RELEASE_TYPE --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "New version: $NEW_VERSION"
+          echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Generate changelog using conventional commits
+          npx conventional-changelog-cli -p conventionalcommits -i CHANGELOG.md -s
+
+          # Extract latest changes
+          CHANGELOG=$(sed -n '/^## \[/,/^## \[/p' CHANGELOG.md | head -n -1)
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          echo "# Release Notes for v${{ steps.version.outputs.new-version }}" > release-notes.md
+          echo "" >> release-notes.md
+          echo "## What's Changed" >> release-notes.md
+
+          # Get commit messages since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [[ "$LAST_TAG" != "" ]]; then
+            git log $LAST_TAG..HEAD --pretty=format:"- %s (%h)" >> release-notes.md
+          else
+            git log --pretty=format:"- %s (%h)" --max-count=20 >> release-notes.md
+          fi
+
+          echo "" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "## Contributors" >> release-notes.md
+          git log $LAST_TAG..HEAD --pretty=format:"- @%an" | sort -u >> release-notes.md
+
+          echo "release-notes<<EOF" >> $GITHUB_OUTPUT
+          cat release-notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Commit version bump
+        run: |
+          git add package.json package-lock.json CHANGELOG.md
+          git commit -m "chore(release): v${{ steps.version.outputs.new-version }} [skip ci]"
+          git push
+
+  # Create GitHub Release
+  create-release:
+    name: Create GitHub Release
+    needs: [prepare-release]
+    runs-on: ubuntu-latest
+    outputs:
+      release-url: ${{ steps.create.outputs.html_url }}
+      release-id: ${{ steps.create.outputs.id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Create Release
+        id: create
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ needs.prepare-release.outputs.new-version }}
+          release_name: Release v${{ needs.prepare-release.outputs.new-version }}
+          body: ${{ needs.prepare-release.outputs.release-notes }}
+          draft: false
+          prerelease: ${{ contains(github.event.inputs.release-type, 'pre') }}
+
+  # Publish to NPM
+  publish-npm:
+    name: Publish to NPM Registry
+    needs: [prepare-release, create-release]
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.inputs.release-type, 'pre') }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run build
+
+      - name: Publish to NPM
+        run: |
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Verify publication
+        run: |
+          sleep 10
+          npm view $(node -p "require('./package.json').name") version
+
+  # Publish to GitHub Packages
+  publish-github:
+    name: Publish to GitHub Packages
+    needs: [prepare-release, create-release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run build
+
+      - name: Publish to GitHub Packages
+        run: |
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Update documentation
+  update-docs:
+    name: Update Documentation
+    needs: [create-release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Update README badges
+        run: |
+          # Update version badge in README
+          sed -i "s/badge\/version-.*-/badge\/version-v${{ needs.prepare-release.outputs.new-version }}-/g" README.md
+
+      - name: Generate API documentation
+        run: |
+          npm install
+          npm run docs:generate || echo "No docs script found"
+
+      - name: Deploy documentation
+        if: success()
+        run: |
+          echo "Deploying documentation to GitHub Pages"
+          # Add your documentation deployment commands
+
+      - name: Commit documentation updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet || git commit -m "docs: update documentation for v${{ needs.prepare-release.outputs.new-version }} [skip ci]"
+          git push
+
+  # Post-release tasks
+  post-release:
+    name: Post-Release Tasks
+    needs: [prepare-release, create-release, publish-npm, publish-github]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Generate release summary
+        run: |
+          echo "# Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## Version: v${{ needs.prepare-release.outputs.new-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Release Status" >> $GITHUB_STEP_SUMMARY
+          echo "| Task | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| GitHub Release | ${{ needs.create-release.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| NPM Publication | ${{ needs.publish-npm.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| GitHub Packages | ${{ needs.publish-github.result }} |" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Release URL" >> $GITHUB_STEP_SUMMARY
+          echo "${{ needs.create-release.outputs.release-url }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify team
+        if: always()
+        run: |
+          echo "Sending release notifications"
+          # Add notification logic (Slack, Discord, email, etc.)
+
+      - name: Trigger deployment workflow
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy.yml',
+              ref: 'main',
+              inputs: {
+                environment: 'production',
+                version: 'v${{ needs.prepare-release.outputs.new-version }}'
+              }
+            });

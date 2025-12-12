@@ -1,0 +1,27 @@
+name: AI Ops
+
+# Runs AI-related pipelines on demand. Use this for tasks such as updating RAG indexes
+# or deploying agents. Trigger manually from the Actions tab.
+on:
+  workflow_dispatch:
+
+jobs:
+  rag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: pnpm install
+      - run: ./scripts/rag-engine.sh
+
+  agents:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: pnpm install
+      - run: ./scripts/agent-orchestrator.sh

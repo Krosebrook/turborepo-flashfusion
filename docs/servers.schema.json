@@ -1,0 +1,91 @@
+{
+  "$id": "https://flashfusion.local/schemas/mcp-servers.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MCP Servers Configuration",
+  "description": "Defines MCP server launch metadata for mcp-startup.ps1/mcp-stop.ps1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mcpServers"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri",
+      "description": "Optional pointer that editors can use for IntelliSense."
+    },
+    "mcpServers": {
+      "type": "object",
+      "description": "Keyed collection of server definitions where each value describes one process or remote endpoint.",
+      "additionalProperties": {
+        "$ref": "#/definitions/server"
+      }
+    }
+  },
+  "definitions": {
+    "envValue": {
+      "description": "Environment values may be literal strings, numbers, booleans, or null placeholders for secret injection.",
+      "type": ["string", "number", "boolean", "null"]
+    },
+    "stringOrArray": {
+      "description": "Arguments can be provided either as a single string or an array of discrete arguments.",
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      ]
+    },
+    "server": {
+      "type": "object",
+      "description": "Single server definition consumed by the MCP start/stop scripts.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true, "description": "Disable to exclude the server without deleting metadata." },
+        "autostart": { "type": "boolean", "default": true, "description": "If false the entry is logged but not started automatically." },
+        "priority": { "type": "integer", "description": "Lower numbers start earlier; unspecified entries default to 999." },
+        "command": { "type": "string", "description": "Binary or script to execute for local servers." },
+        "args": { "$ref": "#/definitions/stringOrArray", "description": "Arguments passed to the command." },
+        "env": {
+          "type": "object",
+          "description": "Key/value pairs injected into the process environment. Supports ${VAR} interpolation.",
+          "additionalProperties": { "$ref": "#/definitions/envValue" }
+        },
+        "processName": { "type": "string", "description": "Friendly process identifier for duplicate detection / shutdown." },
+        "restartOnDuplicate": { "type": "boolean", "default": true, "description": "Stop existing processes with the same name before starting a new one." },
+        "stopCommand": { "type": "string", "description": "Optional custom stop command invoked by mcp-stop.ps1." },
+        "type": { "type": "string", "enum": ["local", "http"], "description": "Set to 'http' for remote-only health checks." },
+        "url": { "type": "string", "format": "uri", "description": "Human-friendly reference to the remote service." },
+        "healthUrl": { "type": "string", "format": "uri", "description": "HTTP/HTTPS endpoint for readiness verification." },
+        "healthCommand": { "type": "string", "description": "Local command executed for custom health verification (exit 0 = healthy)." },
+        "healthCommandArgs": {
+          "type": "array",
+          "description": "Arguments for healthCommand.",
+          "items": { "type": "string" }
+        },
+        "healthTcpHost": { "type": "string", "default": "127.0.0.1", "description": "Host probed during TCP health checks." },
+        "healthTcpPort": { "type": "integer", "minimum": 1, "maximum": 65535, "description": "TCP port probed for readiness." },
+        "environment": { "type": "string", "description": "Free-form label (e.g., dev/stage/prod)." },
+        "restartDelayMs": { "type": "integer", "minimum": 0, "description": "Optional fixed delay (ms) between retries, overriding exponential backoff." }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "http" } },
+            "required": ["type"]
+          },
+          "then": {
+            "description": "HTTP entries must define either url or healthUrl for monitoring.",
+            "anyOf": [
+              { "required": ["url"] },
+              { "required": ["healthUrl"] }
+            ]
+          },
+          "else": {
+            "description": "Local entries require a command to execute.",
+            "required": ["command"]
+          }
+        }
+      ]
+    }
+  }
+}
